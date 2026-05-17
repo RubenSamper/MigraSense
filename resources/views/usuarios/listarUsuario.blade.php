@@ -1,8 +1,98 @@
 @extends("layouts.default")
 
-@section('title','Lista de Tipos de Abonos')
+@section('title','Usuarios')
 
 @section('scripts')
+<style>
+    .listado-usuarios {
+        max-width: 1100px;
+        margin: 30px auto;
+        padding: 0 20px;
+    }
+    .listado-usuarios h2 {
+        color: #006994;
+        margin-bottom: 20px;
+    }
+    .listado-usuarios table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    .listado-usuarios thead th {
+        background: #006994;
+        color: white;
+        padding: 12px 10px;
+        font-weight: 600;
+        text-align: left;
+    }
+    .listado-usuarios tbody td {
+        padding: 10px;
+        border-bottom: 1px solid #e0e0e0;
+    }
+    .listado-usuarios tbody tr:hover {
+        background: #f0f7fa;
+    }
+    .listado-usuarios tbody tr:nth-child(even) {
+        background: #f9f9f9;
+    }
+    .listado-usuarios tbody tr:nth-child(even):hover {
+        background: #f0f7fa;
+    }
+    .listado-usuarios .btn-eliminar {
+        padding: 6px 14px;
+        background: #e74c3c;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 0.85em;
+    }
+    .listado-usuarios .btn-eliminar:hover {
+        background: #c0392b;
+    }
+    .dataTables_wrapper .dataTables_filter input {
+        padding: 6px 10px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        margin-left: 5px;
+    }
+    .dataTables_wrapper .dataTables_length select {
+        padding: 5px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        margin: 0 5px;
+    }
+    .dataTables_wrapper .dataTables_info {
+        padding-top: 15px;
+        color: #555;
+        font-size: 0.9em;
+    }
+    .dataTables_wrapper .dataTables_paginate {
+        padding-top: 15px;
+    }
+    .dataTables_wrapper .dataTables_paginate .paginate_button {
+        padding: 6px 12px;
+        margin: 0 2px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        color: #006994;
+        cursor: pointer;
+        background: white;
+    }
+    .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+        background: #006994;
+        color: white !important;
+        border-color: #006994;
+    }
+    .dataTables_wrapper .dataTables_paginate .paginate_button.current {
+        background: #006994;
+        color: white !important;
+        border-color: #006994;
+    }
+    .dataTables_wrapper .dataTables_processing {
+        color: #006994;
+        font-weight: bold;
+    }
+</style>
 <script>
     $(document).ready(function() {
         var table = $('#listadoUsuario').DataTable({
@@ -56,14 +146,14 @@
                     orderable: false,
                     searchable: false,
                     render: function(data, type, row, meta) {
-                        return '<input type="button" data-row="' + meta.row + '" value="Eliminar" />'
+                        return '<input type="button" data-row="' + meta.row + '" value="Eliminar" class="btn-eliminar" />'
                     },
                 }
             ],
             language: {
                 "decimal": ",",
                 "emptyTable": "No hay datos en la tabla",
-                "info": "Monstrando registros del _START_ al _END_ de un total de _TOTAL_ registros",
+                "info": "Mostrando _START_ a _END_ de _TOTAL_ registros",
                 "infoEmpty": "",
                 "infoFiltered": "",
                 "infoPostFix": "",
@@ -72,7 +162,7 @@
                 "loadingRecords": "Cargando...",
                 "processing": "Procesando...",
                 "search": "Buscar:",
-                "zeroRecords": "No han encontrado registros",
+                "zeroRecords": "No se encontraron registros",
                 "paginate": {
                     "first": "Primero",
                     "last": "Último",
@@ -80,23 +170,17 @@
                     "previous": "Anterior"
                 },
                 "aria": {
-                    "sortAscending": ": Click/return para ordenar ascendentemente",
-                    "sortDescending": ": Click/return para ordenar descendentemente"
+                    "sortAscending": ": Click para ordenar ascendente",
+                    "sortDescending": ": Click para ordenar descendente"
                 }
             }
         });
 
-        $('#listadoUsuario tbody').on('click', 'tr input[value="Eliminar"]', function() {
+        $('#listadoUsuario tbody').on('click', 'tr .btn-eliminar', function() {
             var confirmacion = window.confirm('Va a eliminar este usuario. ¿Desea continuar?')
 
             var dataRow = $(this).attr('data-row')
             var row = table.data()[dataRow];
-
-            $('#listaUsuarios tbody').on('click', 'tr input[type="checkbox"]', function() {
-                var dataRow = $(this).attr('data-row')
-                var row = table.data()[dataRow];
-
-            });
 
             if (confirmacion) {
                 $.ajax({
@@ -115,54 +199,26 @@
                     }
                 });
             }
-
-
         });
     });
-
-
-    function eliminarUsuario(row) {
-        $.ajax({
-            url: "{{ route('usuarios.eliminarUsuario') }}",
-            type: 'POST',
-            data: {
-                "_token": "{{ csrf_token() }}",
-                id: row[0]
-            },
-            success: function(response) {
-                console.log(response);
-            },
-            error: function(response) {
-                console.error("Error", response);
-                window.alert("Ha ocurrido un problema en el servidor.");
-            }
-        });
-    };
 </script>
-
 @endsection
 
 @section('contenido')
-
-<div class="listado">
-
-    <h2 style="font-family: Helvetica;color: #1100ff;">Usuarios registrados</h2>
-
-    <table id="listadoUsuario" class="display" style="width:100%; border: 1px solid #293c29; background-color: #3e8e41;">
-        <thead> <!-- Etiqueta -->
+<div class="listado-usuarios">
+    <h2>Usuarios registrados</h2>
+    <table id="listadoUsuario" class="display">
+        <thead>
             <tr>
-                <th style="font-family: Helvetica;color: #1100ff; padding:5px; border: 1px solid #293c29">Id</th>
-                <th style="font-family: Helvetica;color: #1100ff; padding:5px; border: 1px solid #293c29">Nombre</th>
-                <th style="font-family: Helvetica;color: #1100ff; padding:5px; border: 1px solid #293c29">Apellidos</th>
-                <th style="font-family: Helvetica;color: #1100ff; padding:5px; border: 1px solid #293c29">Correo</th>
-                <th style="font-family: Helvetica;color: #1100ff; padding:5px; border: 1px solid #293c29">Rol</th>
-                <th style="font-family: Helvetica;color: #1100ff; padding:5px; border: 1px solid #293c29"></th>
+                <th>Id</th>
+                <th>Nombre</th>
+                <th>Apellidos</th>
+                <th>Correo</th>
+                <th>Rol</th>
+                <th></th>
             </tr>
         </thead>
-        <tbody style="font-family: Helvetica;"></tbody>
+        <tbody></tbody>
     </table>
-    <a href="{{ route('usuarios.createUsuario') }}" style="margin-top: 10px; display: inline-block; font-family: Helvetica;color: #1100ff;">Crear nuevo usuario</a>
-
 </div>
-
 @endsection
