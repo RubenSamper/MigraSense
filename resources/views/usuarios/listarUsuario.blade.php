@@ -161,6 +161,7 @@
         </thead>
         <tbody style="font-family: Helvetica;"></tbody>
     </table>
+    <a href="{{ route('usuarios.createUsuario') }}" style="margin-top: 10px; display: inline-block; font-family: Helvetica;color: #1100ff;">Crear nuevo usuario</a>
 
 </div>
 

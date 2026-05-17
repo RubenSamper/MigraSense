@@ -19,9 +19,26 @@
         @yield('contenido')
     </div>
 
-    <footer class="footer">
-        <p>Copyright © 2026 - Todos los derechos reservados</p>
+    <footer style="background: #004b6b; color: white; padding: 30px 20px 15px; margin-top: 40px;">
+        <div style="max-width: 1000px; margin: 0 auto; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 20px;">
+            <div>
+                <h4 style="margin: 0 0 8px; font-size: 1.1em;">AquaSense</h4>
+                <p style="margin: 0; font-size: 0.85em; opacity: 0.8;">Monitoreo inteligente de humedad</p>
+            </div>
+            <div>
+                <h4 style="margin: 0 0 8px; font-size: 1.1em;">Enlaces</h4>
+                <p style="margin: 0; font-size: 0.85em; opacity: 0.8;">
+                    <a href="{{ route('landingPage') }}" style="color: white; text-decoration: none;">Inicio</a> ·
+                    <a href="{{ route('usuarios.createUsuario') }}" style="color: white; text-decoration: none;">Registro</a>
+                </p>
+            </div>
+            <div>
+                <h4 style="margin: 0 0 8px; font-size: 1.1em;">Contacto</h4>
+                <p style="margin: 0; font-size: 0.85em; opacity: 0.8;">info@aquasense.com</p>
+            </div>
+        </div>
+        <hr style="border: none; border-top: 1px solid rgba(255,255,255,0.2); margin: 20px 0 10px;">
+        <p style="text-align: center; margin: 0; font-size: 0.8em; opacity: 0.6;">Copyright &copy; 2026 AquaSense. Todos los derechos reservados.</p>
     </footer>
-</footer>
 </body>
 </html>
