@@ -51,21 +51,21 @@ class UsuariosController extends Controller
             $paginacion .= 'LIMIT ' . $request->length . ' OFFSET ' . $request->start;
         }
 
-        $usuarios = DB::select('SELECT * FROM usuarios ' . $where . ' ' . $orderBy . ' ' . $paginacion);
+        $resultados = DB::select('SELECT u.*, r.nombre as rol_nombre FROM usuarios u JOIN roles r ON u.rol_id = r.id ' . $where . ' ' . $orderBy . ' ' . $paginacion);
 
-        $recordsFiltered = DB::select('SELECT COUNT(id) as recordsNum FROM usuarios ' . $where)[0]->recordsNum;
+        $recordsFiltered = DB::select('SELECT COUNT(u.id) as recordsNum FROM usuarios u JOIN roles r ON u.rol_id = r.id ' . $where)[0]->recordsNum;
         $recordsTotal = DB::select('SELECT COUNT(id) as recordsNum FROM usuarios')[0]->recordsNum;
 
         $datos = array();
 
-        foreach ($usuarios as $usuario) {
+        foreach ($resultados as $usuario) {
             $item = array();
 
             $item['id'] = $usuario->id;
             $item['nombre'] = $usuario->nombre;
             $item['apellidos'] = $usuario->apellidos;
             $item['correo'] = $usuario->correo;
-            $item['rol_id'] = $usuario->rol_id;
+            $item['rol_nombre'] = $usuario->rol_nombre;
 
             $datos[] = $item;
         }
@@ -180,7 +180,7 @@ class UsuariosController extends Controller
             'apellidos' => $request->apellidos,
             'correo' => $request->correo,
             'password' => Hash::make($request->password),
-            'rol_id' => 2
+            'rol_id' => 1
         ]);
 
         return redirect()->route('usuarios.createUsuario')->with('success', 'Usuario creado correctamente.');
@@ -212,6 +212,54 @@ class UsuariosController extends Controller
         }
 
         return back()->with('error', 'Credenciales incorrectas.');
+    }
+
+    public function editarUsuario($id)
+    {
+        $usuario = Usuario::findOrFail($id);
+        $roles = DB::select('SELECT * FROM roles');
+        return view('usuarios.editarUsuario', compact('usuario', 'roles'));
+    }
+
+    public function actualizarUsuario(Request $request, $id)
+    {
+        $usuario = Usuario::findOrFail($id);
+
+        $request->validate([
+            'nombre' => ['required', 'regex:/^[\pL\s]+$/u', 'max:255'],
+            'apellidos' => ['required', 'regex:/^[\pL\s]+$/u', 'max:255'],
+            'correo' => ['required', 'email', 'unique:usuarios,correo,' . $id . ',id'],
+            'rol_id' => ['required', 'exists:roles,id'],
+            'password' => ['nullable', 'min:8'],
+        ]);
+
+        $usuario->nombre = $request->nombre;
+        $usuario->apellidos = $request->apellidos;
+        $usuario->correo = $request->correo;
+        $usuario->rol_id = $request->rol_id;
+
+        if ($request->filled('password')) {
+            $usuario->password = Hash::make($request->password);
+        }
+
+        $usuario->save();
+
+        return redirect()->route('usuarios.obtenerListadoUsuarios')->with('success', 'Usuario actualizado correctamente.');
+    }
+
+    public function guardarZona(Request $request)
+    {
+        $request->validate([
+            'latitud' => 'required|numeric|between:-90,90',
+            'longitud' => 'required|numeric|between:-180,180',
+        ]);
+
+        $usuario = Auth::user();
+        $usuario->latitud = $request->latitud;
+        $usuario->longitud = $request->longitud;
+        $usuario->save();
+
+        return response()->json(['success' => true]);
     }
 
     public function logout()

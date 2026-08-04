@@ -9,14 +9,17 @@
         margin: 30px auto;
         padding: 0 20px;
     }
+
     .listado-usuarios h2 {
         color: #006994;
         margin-bottom: 20px;
     }
+
     .listado-usuarios table {
         width: 100%;
         border-collapse: collapse;
     }
+
     .listado-usuarios thead th {
         background: #006994;
         color: white;
@@ -24,19 +27,24 @@
         font-weight: 600;
         text-align: left;
     }
+
     .listado-usuarios tbody td {
         padding: 10px;
         border-bottom: 1px solid #e0e0e0;
     }
+
     .listado-usuarios tbody tr:hover {
         background: #f0f7fa;
     }
+
     .listado-usuarios tbody tr:nth-child(even) {
         background: #f9f9f9;
     }
+
     .listado-usuarios tbody tr:nth-child(even):hover {
         background: #f0f7fa;
     }
+
     .listado-usuarios .btn-eliminar {
         padding: 6px 14px;
         background: #e74c3c;
@@ -46,29 +54,35 @@
         cursor: pointer;
         font-size: 0.85em;
     }
+
     .listado-usuarios .btn-eliminar:hover {
         background: #c0392b;
     }
+
     .dataTables_wrapper .dataTables_filter input {
         padding: 6px 10px;
         border: 1px solid #ccc;
         border-radius: 4px;
         margin-left: 5px;
     }
+
     .dataTables_wrapper .dataTables_length select {
         padding: 5px;
         border: 1px solid #ccc;
         border-radius: 4px;
         margin: 0 5px;
     }
+
     .dataTables_wrapper .dataTables_info {
         padding-top: 15px;
         color: #555;
         font-size: 0.9em;
     }
+
     .dataTables_wrapper .dataTables_paginate {
         padding-top: 15px;
     }
+
     .dataTables_wrapper .dataTables_paginate .paginate_button {
         padding: 6px 12px;
         margin: 0 2px;
@@ -78,16 +92,19 @@
         cursor: pointer;
         background: white;
     }
+
     .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
         background: #006994;
         color: white !important;
         border-color: #006994;
     }
+
     .dataTables_wrapper .dataTables_paginate .paginate_button.current {
         background: #006994;
         color: white !important;
         border-color: #006994;
     }
+
     .dataTables_wrapper .dataTables_processing {
         color: #006994;
         font-weight: bold;
@@ -95,6 +112,7 @@
 </style>
 <script>
     $(document).ready(function() {
+        var editBaseUrl = "{{ route('usuarios.editarUsuario', ':id') }}";
         var table = $('#listadoUsuario').DataTable({
             "paging": true,
             "pagingType": "numbers",
@@ -136,17 +154,19 @@
                     name: 'correo'
                 },
                 {
-                    data: 'rol_id',
-                    name: 'rol_id'
+                    data: 'rol_nombre',
+                    name: 'rol_nombre',
+                    searchable: false
                 },
 
                 {
                     data: null,
-                    name: 'eliminar',
+                    name: 'editar',
                     orderable: false,
                     searchable: false,
                     render: function(data, type, row, meta) {
-                        return '<input type="button" data-row="' + meta.row + '" value="Eliminar" class="btn-eliminar" />'
+                        return '<a href="' + editBaseUrl.replace(':id', row.id) + '" style="padding:6px 14px; background:#3498db; color:white; text-decoration:none; border-radius:4px; font-size:0.85em; margin-right:4px;">Editar</a>' +
+                            '<input type="button" data-row="' + meta.row + '" value="Eliminar" class="btn-eliminar" />'
                     },
                 }
             ],
@@ -215,7 +235,7 @@
                 <th>Apellidos</th>
                 <th>Correo</th>
                 <th>Rol</th>
-                <th></th>
+                <th>Acciones</th>
             </tr>
         </thead>
         <tbody></tbody>

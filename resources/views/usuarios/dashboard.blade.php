@@ -83,9 +83,23 @@
                         }
                     }
                 });
+
+                guardarZona(lat, lon);
             },
             error: function() {
                 alert('Error al cargar los datos meteorológicos.');
+            }
+        });
+    }
+
+    function guardarZona(lat, lon) {
+        $.ajax({
+            url: '{{ route('usuarios.guardarZona') }}',
+            type: 'POST',
+            data: {
+                _token: '{{ csrf_token() }}',
+                latitud: lat,
+                longitud: lon
             }
         });
     }
@@ -99,6 +113,35 @@
             cargarDatos();
         }
     }
+
+    $(function() {
+        @if(Auth::user()->latitud && Auth::user()->longitud)
+            var lat = parseFloat('{{ Auth::user()->latitud }}');
+            var lon = parseFloat('{{ Auth::user()->longitud }}');
+
+            var select = $('#zona')[0];
+            var matched = false;
+            for (var i = 0; i < select.options.length; i++) {
+                var optParts = select.options[i].value.split(',');
+                if (optParts.length === 2) {
+                    var optLat = parseFloat(optParts[0]);
+                    var optLon = parseFloat(optParts[1]);
+                    if (optLat === lat && optLon === lon) {
+                        select.value = select.options[i].value;
+                        matched = true;
+                        break;
+                    }
+                }
+            }
+            if (matched) {
+                preseleccionarZona();
+            } else {
+                $('#latitud').val(lat.toString());
+                $('#longitud').val(lon.toString());
+                cargarDatos();
+            }
+        @endif
+    });
 </script>
 @endsection
 @section('contenido')
