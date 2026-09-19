@@ -86,7 +86,7 @@ class GoogleController extends Controller
 
      protected function redirectByRole()
      {
-         if (Auth::user() && Auth::user()->rol_id == 1) {
+         if (Auth::user() && in_array((int) Auth::user()->rol_id, [1, 3])) {
              return redirect()->route('usuarios.obtenerListadoUsuarios');
          }
          return redirect()->route('usuarios.dashboard');

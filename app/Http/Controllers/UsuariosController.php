@@ -66,6 +66,8 @@ class UsuariosController extends Controller
             $item['apellidos'] = $usuario->apellidos;
             $item['correo'] = $usuario->correo;
             $item['rol_nombre'] = $usuario->rol_nombre;
+            $item['puede_editar'] = $this->puedeGestionarUsuario((string) $usuario->id, (int) $usuario->rol_id);
+            $item['puede_eliminar'] = $item['puede_editar'];
 
             $datos[] = $item;
         }
@@ -83,6 +85,11 @@ class UsuariosController extends Controller
         ]);
 
         $usuario = Usuario::find($request->id);
+
+        if (!$usuario || !$this->puedeGestionarUsuario($usuario->id, $usuario->rol_id)) {
+            return response()->json(['message' => 'No tienes permiso para eliminar este usuario.'], 403);
+        }
+
         $usuario->delete();
 
         return response()->json(['success' => true, 'message' => 'Usuario eliminado correctamente']);
@@ -180,7 +187,7 @@ class UsuariosController extends Controller
             'apellidos' => $request->apellidos,
             'correo' => $request->correo,
             'password' => Hash::make($request->password),
-            'rol_id' => 1
+            'rol_id' => 2
         ]);
 
         return redirect()->route('usuarios.createUsuario')->with('success', 'Usuario creado correctamente.');
@@ -205,7 +212,7 @@ class UsuariosController extends Controller
 
         if (Auth::attempt(['correo' => $request->correo, 'password' => $request->password])) {
             $usuario = Auth::user();
-            if ($usuario->rol_id == 1) {
+            if (in_array((int) $usuario->rol_id, [1, 3])) {
                 return redirect()->route('usuarios.obtenerListadoUsuarios');
             }
             return redirect()->route('usuarios.dashboard');
@@ -217,6 +224,11 @@ class UsuariosController extends Controller
     public function editarUsuario($id)
     {
         $usuario = Usuario::findOrFail($id);
+
+        if (!$this->puedeGestionarUsuario($usuario->id, $usuario->rol_id)) {
+            abort(403, 'No tienes permiso para editar este usuario.');
+        }
+
         $roles = DB::select('SELECT * FROM roles');
         return view('usuarios.editarUsuario', compact('usuario', 'roles'));
     }
@@ -225,13 +237,21 @@ class UsuariosController extends Controller
     {
         $usuario = Usuario::findOrFail($id);
 
+        if (!$this->puedeGestionarUsuario($usuario->id, $usuario->rol_id)) {
+            abort(403, 'No tienes permiso para editar este usuario.');
+        }
+
         $request->validate([
             'nombre' => ['required', 'regex:/^[\pL\s]+$/u', 'max:255'],
             'apellidos' => ['required', 'regex:/^[\pL\s]+$/u', 'max:255'],
             'correo' => ['required', 'email', 'unique:usuarios,correo,' . $id . ',id'],
-            'rol_id' => ['required', 'exists:roles,id'],
+            'rol_id' => ['required', 'exists:roles,id', 'not_in:3'],
             'password' => ['nullable', 'min:8'],
         ]);
+
+        if ((int) Auth::user()->rol_id !== 3 && (int) $request->rol_id !== 2) {
+            abort(403, 'Solo el superusuario puede asignar roles administrativos.');
+        }
 
         $usuario->nombre = $request->nombre;
         $usuario->apellidos = $request->apellidos;
@@ -254,7 +274,7 @@ class UsuariosController extends Controller
             'longitud' => 'required|numeric|between:-180,180',
         ]);
 
-        $usuario = Auth::user();
+        $usuario = Usuario::findOrFail(Auth::id()); // Obtener el usuario autenticado
         $usuario->latitud = $request->latitud;
         $usuario->longitud = $request->longitud;
         $usuario->save();
@@ -266,6 +286,21 @@ class UsuariosController extends Controller
     {
         Auth::logout();
         return redirect()->route('landingPage');
+    }
+
+    private function puedeGestionarUsuario(string $usuarioId, int $rolObjetivo): bool
+    {
+        $rolActual = (int) Auth::user()->rol_id;
+
+        if ((string) Auth::id() === (string) $usuarioId) {
+            return false;
+        }
+
+        if ($rolActual === 3) {
+            return $rolObjetivo !== 3;
+        }
+
+        return $rolActual === 1 && $rolObjetivo === 2;
     }
 
     public function validarPasswordUsuario(Request $request)

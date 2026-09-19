@@ -165,8 +165,14 @@
                     orderable: false,
                     searchable: false,
                     render: function(data, type, row, meta) {
-                        return '<a href="' + editBaseUrl.replace(':id', row.id) + '" style="padding:6px 14px; background:#3498db; color:white; text-decoration:none; border-radius:4px; font-size:0.85em; margin-right:4px;">Editar</a>' +
-                            '<input type="button" data-row="' + meta.row + '" value="Eliminar" class="btn-eliminar" />'
+                        var acciones = '';
+                        if (row.puede_editar) {
+                            acciones += '<a href="' + editBaseUrl.replace(':id', row.id) + '" style="padding:6px 14px; background:#3498db; color:white; text-decoration:none; border-radius:4px; font-size:0.85em; margin-right:4px;">Editar</a>';
+                        }
+                        if (row.puede_eliminar) {
+                            acciones += '<input type="button" data-row="' + meta.row + '" value="Eliminar" class="btn-eliminar" />';
+                        }
+                        return acciones || '<span style="color:#888; font-size:0.85em;">Sin permisos</span>';
                     },
                 }
             ],

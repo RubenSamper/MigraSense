@@ -189,7 +189,9 @@
             <label for="rol_id">Rol</label>
             <select id="rol_id" name="rol_id">
                 @foreach($roles as $rol)
-                    <option value="{{ $rol->id }}" {{ old('rol_id', $usuario->rol_id) == $rol->id ? 'selected' : '' }}>{{ $rol->nombre }}</option>
+                    @if((int) $rol->id !== 3)
+                        <option value="{{ $rol->id }}" {{ old('rol_id', $usuario->rol_id) == $rol->id ? 'selected' : '' }}>{{ $rol->nombre }}</option>
+                    @endif
                 @endforeach
             </select>
             @error('rol_id')
