@@ -11,15 +11,82 @@
         <link href="https://cdn.datatables.net/v/dt/dt-1.13.4/datatables.min.css" rel="stylesheet"/> 
         <script src="https://cdn.datatables.net/v/dt/dt-1.13.4/datatables.min.js"></script>
     <title>@yield('title')</title>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; }
+        html { overflow-x: hidden; }
+        body { margin: 0; min-width: 320px; overflow-x: hidden; }
+        img, canvas, iframe { max-width: 100%; }
+        button, input, select, textarea { max-width: 100%; font: inherit; }
+        main, section, article, form { min-width: 0; }
+
+        :focus-visible {
+            outline: 3px solid #f5b942;
+            outline-offset: 3px;
+        }
+
+        .skip-link {
+            position: fixed;
+            top: 8px;
+            left: 8px;
+            z-index: 2000;
+            padding: 10px 14px;
+            border-radius: 6px;
+            background: #173042;
+            color: #fff;
+            transform: translateY(-150%);
+        }
+
+        .skip-link:focus { transform: translateY(0); }
+
+        .page-content:focus { outline: none; }
+
+        .page-shell {
+            width: min(1120px, calc(100% - 32px));
+            margin: 0 auto;
+        }
+
+        @media (max-width: 600px) {
+            .notification-stack { right: 12px; left: 12px; }
+            .notification-stack .notification-item { width: 100%; }
+        }
+    </style>
     @yield('scripts')
 </head>
 <body>
+    <a class="skip-link" href="#main-content">Saltar al contenido principal</a>
     <x-layouts.menu/>
-    <div>
+    <div class="notification-stack" aria-label="Notificaciones">
+        @foreach (['success', 'error', 'warning', 'info'] as $tipo)
+            <x-notification :type="$tipo" :message="session($tipo)" />
+        @endforeach
+    </div>
+
+    <style>
+        .notification-stack {
+            position: fixed;
+            top: 82px;
+            right: 24px;
+            z-index: 1000;
+            display: grid;
+            gap: 12px;
+            pointer-events: none;
+        }
+
+        .notification-stack .notification-item { pointer-events: auto; }
+
+        @media (max-width: 600px) {
+            .notification-stack {
+                top: 72px;
+                right: 16px;
+            }
+        }
+    </style>
+
+    <div id="main-content" class="page-content" tabindex="-1">
         @yield('contenido')
     </div>
 
-    <footer style="background: #004b6b; color: white; padding: 30px 20px 15px; margin-top: 40px;">
+    <footer aria-label="Pie de página" style="background: #004b6b; color: white; padding: 30px 20px 15px; margin-top: 40px;">
         <div style="max-width: 1000px; margin: 0 auto; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 20px;">
             <div>
                 <h4 style="margin: 0 0 8px; font-size: 1.1em;">AquaSense</h4>

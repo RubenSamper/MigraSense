@@ -213,9 +213,13 @@ class UsuariosController extends Controller
         if (Auth::attempt(['correo' => $request->correo, 'password' => $request->password])) {
             $usuario = Auth::user();
             if (in_array((int) $usuario->rol_id, [1, 3])) {
-                return redirect()->route('usuarios.obtenerListadoUsuarios');
+                return redirect()
+                    ->route('usuarios.obtenerListadoUsuarios')
+                    ->with('success', 'Sesión iniciada correctamente.');
             }
-            return redirect()->route('usuarios.dashboard');
+            return redirect()
+                ->route('usuarios.dashboard')
+                ->with('success', 'Sesión iniciada correctamente.');
         }
 
         return back()->with('error', 'Credenciales incorrectas.');
@@ -279,13 +283,18 @@ class UsuariosController extends Controller
         $usuario->longitud = $request->longitud;
         $usuario->save();
 
-        return response()->json(['success' => true]);
+        return response()->json([
+            'success' => true,
+            'message' => 'Zona guardada correctamente.',
+        ]);
     }
 
     public function logout()
     {
         Auth::logout();
-        return redirect()->route('landingPage');
+        return redirect()
+            ->route('landingPage')
+            ->with('info', 'Has cerrado sesión correctamente.');
     }
 
     private function puedeGestionarUsuario(string $usuarioId, int $rolObjetivo): bool

@@ -3,7 +3,8 @@
 @section('scripts')
 <style>
     .registro-wrapper {
-        max-width: 500px;
+        width: min(500px, calc(100% - 32px));
+        box-sizing: border-box;
         margin: 40px auto;
         padding: 30px;
         border: 1px solid #ddd;
@@ -73,6 +74,10 @@
         border-radius: 5px;
         font-size: 0.9em;
         display: none;
+    }
+
+    @media (max-width: 480px) {
+        .registro-wrapper { margin: 24px auto; padding: 20px 16px; }
     }
 </style>
 <script>
@@ -240,5 +245,6 @@
         </div>
         <button type="submit">Registrar</button>
     </form>
+    <a href="{{ route('google.register') }}" style="display:block; text-align:center; padding:12px; background:white; color:#3c4043; border:1px solid #dadce0; border-radius:5px; text-decoration:none; font-weight:bold; margin-top:12px;">Crear cuenta con Google</a>
 </div>
 @endsection

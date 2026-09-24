@@ -3,7 +3,8 @@
 @section('scripts')
 <style>
     .login-wrapper {
-        max-width: 450px;
+        width: min(450px, calc(100% - 32px));
+        box-sizing: border-box;
         margin: 60px auto;
         padding: 30px;
         border: 1px solid #ddd;
@@ -88,6 +89,10 @@
         margin-top: 5px;
         font-size: 0.9em;
     }
+
+    @media (max-width: 480px) {
+        .login-wrapper { margin: 28px auto; padding: 22px 16px; }
+    }
 </style>
 @endsection
 @section('contenido')
@@ -113,8 +118,5 @@
     </form>
         <a href="{{ route('google.login') }}" style="display:block; text-align:center; padding:12px; background:white; color:#3c4043; border:1px solid #dadce0; border-radius:5px; text-decoration:none; font-weight:bold; margin-top:12px;">Iniciar sesión con Google</a>
 
-        @if(session('error'))
-        <div class="alerta" style="margin-top: 15px;">{{ session('error') }}</div>
-        @endif
 </div>
 @endsection

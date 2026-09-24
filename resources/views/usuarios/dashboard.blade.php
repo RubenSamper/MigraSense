@@ -1,6 +1,8 @@
 @extends("layouts.default")
 @section('title','Dashboard')
 @section('scripts')
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
     .weather-dashboard {
@@ -50,12 +52,82 @@
     }
 
     .weather-controls {
-        display: flex;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
         gap: 16px;
         align-items: end;
-        flex-wrap: wrap;
         padding: 18px;
         border-radius: 12px;
+    }
+
+    .weather-controls-heading {
+        grid-column: 1 / -1;
+        margin: 0;
+        color: var(--ink);
+        font-size: 1rem;
+    }
+
+    .weather-controls-note {
+        grid-column: 1 / -1;
+        margin: -9px 0 0;
+        color: var(--muted);
+        font-size: .84rem;
+    }
+
+    .weather-map-panel {
+        margin-bottom: 24px;
+        padding: 18px;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: var(--surface);
+        box-shadow: 0 12px 30px rgba(23, 48, 66, 0.07);
+    }
+
+    .weather-map-heading {
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        align-items: baseline;
+        margin-bottom: 12px;
+    }
+
+    .weather-map-heading h3 {
+        margin: 0;
+        font-size: 1.1rem;
+    }
+
+    .weather-map-heading span {
+        color: var(--muted);
+        font-size: 0.85rem;
+    }
+
+    .weather-map-action {
+        min-height: 36px;
+        padding: 7px 12px;
+        border: 1px solid #b9d1d9;
+        border-radius: 7px;
+        background: #f1f8fa;
+        color: var(--accent);
+        cursor: pointer;
+        font-weight: 700;
+    }
+
+    .weather-map-action:hover {
+        border-color: var(--accent);
+        background: #e1f0f3;
+    }
+
+    .weather-map-status {
+        min-height: 20px;
+        margin: 10px 0 0;
+        color: var(--muted);
+        font-size: 0.82rem;
+    }
+
+    #weatherMap {
+        height: 330px;
+        overflow: hidden;
+        border-radius: 8px;
     }
 
     .weather-field {
@@ -70,18 +142,15 @@
         font-weight: 700;
     }
 
-    .weather-field select,
     .weather-field input {
+        width: 100%;
+        box-sizing: border-box;
         min-height: 40px;
         padding: 8px 11px;
         border: 1px solid #cbd9de;
         border-radius: 7px;
         color: var(--ink);
         background: #fff;
-    }
-
-    .weather-field select {
-        min-width: 190px;
     }
 
     .weather-button {
@@ -224,11 +293,15 @@
             padding: 28px 16px 40px;
         }
 
-        .weather-controls>* {
-            width: 100%;
+        .weather-controls {
+            grid-template-columns: 1fr;
         }
 
-        .weather-field select,
+        .weather-controls-heading,
+        .weather-controls-note {
+            grid-column: auto;
+        }
+
         .weather-field input,
         .weather-button {
             width: 100%;
@@ -241,11 +314,32 @@
         .weather-chart {
             height: 300px;
         }
+
+        #weatherMap {
+            height: 280px;
+        }
+
+        .weather-map-heading {
+            display: block;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .weather-dashboard { padding-inline: 12px; }
+        .weather-controls { padding: 14px; }
+        .weather-current { grid-template-columns: 1fr; }
+        .weather-chart-panel { padding: 16px; }
+        .weather-chart-heading { display: block; }
+        .weather-chart-heading span { display: block; margin-top: 6px; }
+        .weather-days { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .weather-day { min-height: 48px; }
     }
 </style>
 <script>
     let chart = null;
     let pronostico = null;
+    let mapa = null;
+    let marcador = null;
 
     function nombreDia(fecha) {
         return new Intl.DateTimeFormat('es-ES', {
@@ -397,6 +491,64 @@
         });
     }
 
+    function actualizarMapa(lat, lon) {
+        const ubicacion = [Number(lat), Number(lon)];
+
+        if (!mapa) return;
+
+        if (!marcador) {
+            marcador = L.marker(ubicacion).addTo(mapa);
+        } else {
+            marcador.setLatLng(ubicacion);
+        }
+
+        mapa.flyTo(ubicacion, Math.max(mapa.getZoom(), 6), { duration: 0.6 });
+        marcador.bindPopup(`Ubicación seleccionada<br>${Number(lat).toFixed(4)}, ${Number(lon).toFixed(4)}`).openPopup();
+        $('#weatherMapStatus').text(`Ubicación seleccionada: ${Number(lat).toFixed(4)}, ${Number(lon).toFixed(4)}`);
+    }
+
+    function usarMiUbicacion() {
+        if (!navigator.geolocation) {
+            $('#weatherMapStatus').text('Tu navegador no permite obtener la ubicación.');
+            return;
+        }
+
+        $('#weatherMapStatus').text('Obteniendo tu ubicación...');
+
+        navigator.geolocation.getCurrentPosition(
+            (posicion) => {
+                const lat = posicion.coords.latitude.toFixed(6);
+                const lon = posicion.coords.longitude.toFixed(6);
+
+                $('#latitud').val(lat);
+                $('#longitud').val(lon);
+                actualizarMapa(lat, lon);
+            },
+            () => $('#weatherMapStatus').text('No se pudo obtener tu ubicación. Revisa los permisos del navegador.'),
+            { enableHighAccuracy: true, timeout: 10000, maximumAge: 300000 }
+        );
+    }
+
+    function inicializarMapa() {
+        mapa = L.map('weatherMap').setView([40.4168, -3.7038], 5);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(mapa);
+
+        mapa.on('click', (evento) => {
+            const lat = evento.latlng.lat.toFixed(6);
+            const lon = evento.latlng.lng.toFixed(6);
+
+            $('#latitud').val(lat);
+            $('#longitud').val(lon);
+            actualizarMapa(lat, lon);
+        });
+
+        setTimeout(() => mapa.invalidateSize(), 100);
+    }
+
     function guardarZona(lat, lon) {
         $.ajax({
             url: "{{ route('usuarios.guardarZona') }}",
@@ -409,34 +561,16 @@
         });
     }
 
-    function preseleccionarZona() {
-        const [lat, lon] = $('#zona').val().split(',');
-        if (lat && lon) {
-            $('#latitud').val(lat);
-            $('#longitud').val(lon);
-            cargarDatos();
-        }
-    }
-
-    function seleccionarZonaGuardada() {
-        const latitud = Number(latitudGuardada);
-        const longitud = Number(longitudGuardada);
-        const opcion = [...document.querySelector('#zona').options].find((elemento) => {
-            const [lat, lon] = elemento.value.split(',').map(Number);
-            return Math.abs(lat - latitud) < 0.0001 && Math.abs(lon - longitud) < 0.0001;
-        });
-
-        if (opcion) document.querySelector('#zona').value = opcion.value;
-    }
-
     const latitudGuardada = '{{ Auth::user()->latitud }}';
     const longitudGuardada = '{{ Auth::user()->longitud }}';
 
     $(function() {
+        inicializarMapa();
+
         if (latitudGuardada && longitudGuardada) {
-            seleccionarZonaGuardada();
             $('#latitud').val(latitudGuardada);
             $('#longitud').val(longitudGuardada);
+            actualizarMapa(latitudGuardada, longitudGuardada);
             cargarDatos();
         }
     });
@@ -450,24 +584,21 @@
         <p>Consulta las condiciones actuales y explora la previsión hora a hora.</p>
     </header>
 
-    <section class="weather-controls" aria-label="Ubicación de la previsión">
-        <div class="weather-field">
-            <label for="zona">Zona predefinida</label>
-            <select id="zona" onchange="preseleccionarZona()">
-                <option value="">-- Selecciona --</option>
-                <option value="36.8340,-2.4637">Almería</option>
-                <option value="37.1882,-3.6067">Granada</option>
-                <option value="37.3891,-5.9845">Sevilla</option>
-                <option value="40.4168,-3.7038">Madrid</option>
-                <option value="41.3874,2.1686">Barcelona</option>
-                <option value="41.6488,-0.8891">Zaragoza</option>
-                <option value="39.4699,-0.3763">Valencia</option>
-                <option value="43.2630,-2.9350">Bilbao</option>
-                <option value="42.8782,-8.5448">Santiago</option>
-                <option value="39.8628,4.0273">Menorca</option>
-                <option value="28.4636,-16.2518">Tenerife</option>
-            </select>
+    <section class="weather-map-panel" aria-label="Selector de ubicación en el mapa">
+        <div class="weather-map-heading">
+            <div>
+                <h3>Selecciona una ubicación en el mapa</h3>
+                <span>Haz clic para colocar el marcador</span>
+            </div>
+            <button class="weather-map-action" type="button" onclick="usarMiUbicacion()">Usar mi ubicación</button>
         </div>
+        <div id="weatherMap" tabindex="0" aria-label="Mapa interactivo. Usa el teclado para desplazarte y los campos de coordenadas para introducir una ubicación exacta."></div>
+        <p id="weatherMapStatus" class="weather-map-status" role="status">Selecciona un punto o usa tu ubicación.</p>
+    </section>
+
+    <section class="weather-controls" aria-label="Ubicación de la previsión">
+        <h3 class="weather-controls-heading">Coordenadas seleccionadas</h3>
+        <p class="weather-controls-note">Puedes hacer clic en el mapa o ajustar los valores manualmente.</p>
         <div class="weather-field">
             <label for="latitud">Latitud</label>
             <input type="text" id="latitud" placeholder="Ej: 52.52">

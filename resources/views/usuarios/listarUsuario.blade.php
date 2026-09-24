@@ -5,7 +5,8 @@
 @section('scripts')
 <style>
     .listado-usuarios {
-        max-width: 1100px;
+        width: min(1100px, calc(100% - 32px));
+        box-sizing: border-box;
         margin: 30px auto;
         padding: 0 20px;
     }
@@ -108,6 +109,16 @@
     .dataTables_wrapper .dataTables_processing {
         color: #006994;
         font-weight: bold;
+    }
+
+    .dataTables_wrapper { overflow-x: auto; }
+
+    @media (max-width: 600px) {
+        .listado-usuarios { margin: 20px auto; padding: 0; }
+        .listado-usuarios h2 { font-size: 1.35rem; }
+        .dataTables_wrapper .dataTables_length,
+        .dataTables_wrapper .dataTables_filter { float: none; text-align: left; margin-bottom: 10px; }
+        .dataTables_wrapper .dataTables_filter input { width: min(100%, 220px); margin-left: 0; }
     }
 </style>
 <script>

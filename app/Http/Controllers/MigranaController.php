@@ -51,8 +51,22 @@ class MigranaController extends Controller
         ]);
 
         return redirect()
-            ->route('usuarios.registrarMigrana')
+            ->route('usuarios.seguimientoMigrana')
             ->with('success', 'Migraña registrada correctamente.');
+    }
+
+    public function eliminarMigrana(string $id)
+    {
+        $migrana = TipoMigrana::query()
+            ->where('id', $id)
+            ->where('usuario_id', Auth::id())
+            ->firstOrFail();
+
+        $migrana->delete();
+
+        return redirect()
+            ->route('usuarios.seguimientoMigrana')
+            ->with('success', 'Registro de migraña eliminado correctamente.');
     }
 
     public function listarMigranas()

@@ -3,7 +3,8 @@
 @section('scripts')
 <style>
     .registro-wrapper {
-        max-width: 500px;
+        width: min(500px, calc(100% - 32px));
+        box-sizing: border-box;
         margin: 40px auto;
         padding: 30px;
         border: 1px solid #ddd;
@@ -68,6 +69,18 @@
         margin-bottom: 20px;
         font-size: 0.9em;
         text-align: center;
+    }
+
+    .edit-actions {
+        display: flex;
+        gap: 10px;
+    }
+
+    .edit-actions > * { min-width: 0; flex: 1; }
+
+    @media (max-width: 480px) {
+        .registro-wrapper { margin: 24px auto; padding: 20px 16px; }
+        .edit-actions { flex-direction: column; }
     }
 </style>
 <script>
@@ -209,7 +222,7 @@
             <div class="alerta">{{ $message }}</div>
             @enderror
         </div>
-        <div style="display:flex; gap:10px;">
+        <div class="edit-actions">
             <button type="submit">Guardar cambios</button>
             <a href="{{ route('usuarios.obtenerListadoUsuarios') }}" style="display:block; text-align:center; padding:12px; background:#888; color:white; text-decoration:none; border-radius:5px; font-weight:bold; flex:1;">Cancelar</a>
         </div>

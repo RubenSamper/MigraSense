@@ -74,6 +74,25 @@
     .migraine-episode { padding: 13px 0; border-top: 1px solid var(--line); }
     .migraine-episode:first-of-type { border-top: 0; padding-top: 0; }
     .migraine-episode strong { color: var(--warm); }
+    .migraine-episode-header {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+    .migraine-delete-form { margin: 0; }
+    .migraine-delete-button {
+        padding: 6px 10px;
+        border: 1px solid #e2b1ab;
+        border-radius: 6px;
+        background: #fff5f4;
+        color: #b42318;
+        cursor: pointer;
+        font-size: .78rem;
+        font-weight: 700;
+    }
+    .migraine-delete-button:hover { background: #b42318; color: #fff; }
     .migraine-meta { display: flex; flex-wrap: wrap; gap: 7px; margin: 8px 0; }
     .migraine-tag { padding: 4px 8px; border-radius: 999px; background: var(--soft); color: var(--ink); font-size: .78rem; }
     .migraine-notes { margin: 7px 0 0; color: var(--muted); font-size: .88rem; }
@@ -94,6 +113,13 @@
         .migraine-followup { padding: 28px 16px 40px; }
         .followup-header { display: block; }
         .followup-button { margin-top: 18px; }
+        .followup-panel { padding: 16px; }
+        .followup-chart { height: 230px; }
+        .migraine-days { grid-template-columns: 1fr; }
+        .migraine-card { padding: 16px; }
+        .migraine-episode-header { align-items: flex-start; }
+        .migraine-delete-form { width: 100%; }
+        .migraine-delete-button { width: 100%; }
     }
 </style>
 <script>
@@ -165,7 +191,14 @@
 
                             @foreach ($episodios as $episodio)
                                 <div class="migraine-episode">
-                                    <strong>{{ \Carbon\Carbon::parse($episodio->hora_inicio)->format('H:i') }} - {{ $episodio->hora_termina ? \Carbon\Carbon::parse($episodio->hora_termina)->format('H:i') : 'Sin hora de fin' }}</strong>
+                                    <div class="migraine-episode-header">
+                                        <strong>{{ \Carbon\Carbon::parse($episodio->hora_inicio)->format('H:i') }} - {{ $episodio->hora_termina ? \Carbon\Carbon::parse($episodio->hora_termina)->format('H:i') : 'Sin hora de fin' }}</strong>
+                                        <form class="migraine-delete-form" method="POST" action="{{ route('usuarios.eliminarMigrana', $episodio->id) }}" onsubmit="return confirm('¿Quieres eliminar este registro de migraña?');">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button class="migraine-delete-button" type="submit">Eliminar</button>
+                                        </form>
+                                    </div>
                                     <div class="migraine-meta">
                                         <span class="migraine-tag">{{ ucfirst($episodio->tipo_migrana) }}</span>
                                         <span class="migraine-tag">Intensidad: {{ ucfirst($episodio->intensidad) }}</span>

@@ -14,18 +14,38 @@ class GoogleController extends Controller
 {
      public function login()
      {
-         return Socialite::driver('google')->redirect();
+         return $this->redirectToGoogle('login');
+     }
+
+     public function register()
+     {
+         return $this->redirectToGoogle('register');
+     }
+
+     protected function redirectToGoogle(string $mode)
+     {
+         session(['google_auth_mode' => $mode]);
+
+         return Socialite::driver('google')
+             ->with(['prompt' => 'select_account'])
+             ->redirect();
      }
   
      public function callback()
      {
          try {
- 
+             $mode = session()->pull('google_auth_mode', 'login');
              $usuarioGoogle = Socialite::driver('google')->user();
 
             $existeUsuario = Usuario::where('google_id', $usuarioGoogle->id)->first();
 
              if ($existeUsuario) {
+                 if ($mode === 'register') {
+                     return redirect()
+                         ->route('usuarios.createUsuario')
+                         ->with('error', 'Ya existe una cuenta asociada a esta cuenta de Google.');
+                 }
+
                  Auth::login($existeUsuario);
                  return $this->redirectByRole();
              }
@@ -33,10 +53,22 @@ class GoogleController extends Controller
              // si ya existe un usuario con el mismo correo, asociar google_id y loguear
              $usuarioPorCorreo = Usuario::where('correo', $usuarioGoogle->email)->first();
              if ($usuarioPorCorreo) {
+                 if ($mode === 'register') {
+                     return redirect()
+                         ->route('usuarios.createUsuario')
+                         ->with('error', 'Ya existe una cuenta con este correo electrónico. Inicia sesión.');
+                 }
+
                  $usuarioPorCorreo->google_id = $usuarioGoogle->id;
                  $usuarioPorCorreo->save();
                  Auth::login($usuarioPorCorreo);
                  return $this->redirectByRole();
+             }
+
+             if ($mode !== 'register') {
+                 return redirect()
+                     ->route('usuarios.login')
+                     ->with('error', 'No existe una cuenta con este correo. Regístrate primero.');
              }
 
              // crear nuevo usuario
@@ -65,9 +97,9 @@ class GoogleController extends Controller
                  $nuevoUsuario = Usuario::create($datos);
              } catch (\Exception $e) {
                  Log::error('Error creando usuario Google: ' . $e->getMessage(), ['datos' => $datos]);
-                 return redirect()->route('usuarios.login')->withErrors([
-                     'google' => 'No se pudo crear el usuario (ver logs).'
-                 ]);
+                 return redirect()
+                     ->route('usuarios.login')
+                     ->with('error', 'No se pudo crear el usuario con Google.');
              }
 
              Auth::login($nuevoUsuario);
@@ -77,9 +109,9 @@ class GoogleController extends Controller
          } 
          catch (Exception $e) 
          {
-            return redirect()->route('usuarios.login')->withErrors([
-                'google' => $e->getMessage()
-            ]);
+            return redirect()
+                ->route('usuarios.login')
+                ->with('error', 'No se pudo iniciar sesión con Google.');
          }
   
       }
@@ -87,8 +119,12 @@ class GoogleController extends Controller
      protected function redirectByRole()
      {
          if (Auth::user() && in_array((int) Auth::user()->rol_id, [1, 3])) {
-             return redirect()->route('usuarios.obtenerListadoUsuarios');
+             return redirect()
+                 ->route('usuarios.obtenerListadoUsuarios')
+                 ->with('success', 'Sesión iniciada con Google correctamente.');
          }
-         return redirect()->route('usuarios.dashboard');
+         return redirect()
+             ->route('usuarios.dashboard')
+             ->with('success', 'Sesión iniciada con Google correctamente.');
      }
  }

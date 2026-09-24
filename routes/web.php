@@ -40,6 +40,9 @@ Route::get('/usuarios/seguimientoMigrana', [MigranaController::class, 'seguimien
 Route::post('/usuarios/guardarMigrana', [MigranaController::class, 'guardarMigrana'])
 	->middleware('auth')
 	->name('usuarios.guardarMigrana');
+Route::delete('/usuarios/migranas/{id}', [MigranaController::class, 'eliminarMigrana'])
+	->middleware('auth')
+	->name('usuarios.eliminarMigrana');
 Route::get('/usuarios/listarMigranas', [MigranaController::class, 'listarMigranas'])
 	->middleware('auth')
 	->name('usuarios.listarMigranas');
@@ -50,4 +53,5 @@ Route::post('/usuarios/validarLogin', [UsuariosController::class, 'validarLogin'
 Route::get('/usuarios/logout', [UsuariosController::class, 'logout'])->name('usuarios.logout');
 
 Route::get('/google/login', [GoogleController::class, 'login'])->name('google.login');
+Route::get('/google/register', [GoogleController::class, 'register'])->name('google.register');
 Route::get('/google/callback', [GoogleController::class, 'callback'])->name('google.callback');
