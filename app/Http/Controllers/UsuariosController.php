@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
+use App\Models\Recordatorio;
 
 class UsuariosController extends Controller
 {
@@ -195,7 +196,14 @@ class UsuariosController extends Controller
 
     public function dashboard()
     {
-        return view('usuarios.dashboard');
+        $recordatorios = Recordatorio::query()
+            ->where('usuario_id', Auth::id())
+            ->where('completado', false)
+            ->where('fecha_recordatorio', '>=', now()->startOfDay())
+            ->orderBy('fecha_recordatorio')
+            ->get();
+
+        return view('usuarios.dashboard', compact('recordatorios'));
     }
 
     public function login()

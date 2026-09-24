@@ -3,6 +3,7 @@
 use App\Http\Controllers\UsuariosController;
 use App\Http\Controllers\GoogleController;
 use App\Http\Controllers\MigranaController;
+use App\Http\Controllers\AlertasController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [UsuariosController::class, 'landingPage'])->name('landingPage');
@@ -29,6 +30,9 @@ Route::get('/usuarios/dashboard', [UsuariosController::class, 'dashboard']) // e
 Route::post('/usuarios/guardarZona', [UsuariosController::class, 'guardarZona'])
 	->middleware('auth')
 	->name('usuarios.guardarZona');
+Route::post('/usuarios/guardarAlertasClima', [AlertasController::class, 'guardarAlertasClima'])
+	->middleware('auth')
+	->name('usuarios.guardarAlertasClima');
 
 Route::get('/usuarios/registrarMigrana', [MigranaController::class, 'registrarMigrana'])
 	->middleware('auth')
