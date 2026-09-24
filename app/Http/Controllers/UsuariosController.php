@@ -107,7 +107,7 @@ class UsuariosController extends Controller
                 'required',
                 'regex:/^[\pL\s]+$/u',
             ]
-        ]);
+        ], self::mensajesValidacionUsuario());
 
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()->all()]/*, 500*/);
@@ -123,7 +123,7 @@ class UsuariosController extends Controller
                 'required',
                 'regex:/^[\pL\s]+$/u',
             ]
-        ]);
+        ], self::mensajesValidacionUsuario());
 
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()->all()]/*, 500*/);
@@ -140,7 +140,7 @@ class UsuariosController extends Controller
                 'email',
                 'unique:usuarios,correo'
             ]
-        ]);
+        ], self::mensajesValidacionUsuario());
 
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()->all()]/*, 500*/);
@@ -179,7 +179,7 @@ class UsuariosController extends Controller
                 'required',
                 'min:8'
             ]
-        ]);
+        ], self::mensajesValidacionUsuario());
 
         Usuario::create([
             'id' => self::generarUUID(),
@@ -319,12 +319,29 @@ class UsuariosController extends Controller
                 'required',
                 'min:8'
             ]
-        ]);
+        ], self::mensajesValidacionUsuario());
 
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()->all()]);
         } else {
             return response()->json(['success' => true]);
         }
+    }
+
+    private static function mensajesValidacionUsuario(): array
+    {
+        return [
+            'nombre.required' => 'El nombre es obligatorio.',
+            'nombre.regex' => 'El nombre solo puede contener letras y espacios.',
+            'nombre.max' => 'El nombre no puede superar los 255 caracteres.',
+            'apellidos.required' => 'Los apellidos son obligatorios.',
+            'apellidos.regex' => 'Los apellidos solo pueden contener letras y espacios.',
+            'apellidos.max' => 'Los apellidos no pueden superar los 255 caracteres.',
+            'correo.required' => 'El correo electrónico es obligatorio.',
+            'correo.email' => 'Introduce un correo electrónico válido.',
+            'correo.unique' => 'Este correo electrónico ya está registrado.',
+            'password.required' => 'La contraseña es obligatoria.',
+            'password.min' => 'La contraseña debe tener al menos 8 caracteres.',
+        ];
     }
 }

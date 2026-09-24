@@ -2,6 +2,12 @@
 <?php $__env->startSection('scripts'); ?>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
+        .migraine-form-shell {
+            width: min(1000px, calc(100% - 32px));
+            margin: 0 auto;
+            padding: 30px 0;
+        }
+
         .date-field {
             display: flex;
             flex-direction: column;
@@ -16,6 +22,16 @@
             flex-wrap: nowrap;
         }
 
+        .migraine-form-row {
+            display: flex;
+            gap: 15px;
+            align-items: flex-start;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+
+        .migraine-form-row > * { min-width: 0; }
+
         .date-field small {
             min-height: 30px;
             color: #647783;
@@ -23,9 +39,14 @@
         }
 
         @media (max-width: 700px) {
+            .migraine-form-shell { width: calc(100% - 32px); padding: 24px 0 40px; }
+            .migraine-form-row { display: grid; grid-template-columns: 1fr; }
             .date-fields-row {
-                flex-wrap: wrap;
+                display: grid;
+                grid-template-columns: 1fr;
             }
+
+            .date-field { width: 100%; }
         }
     </style>
     <script>
@@ -58,13 +79,13 @@
     </script>
 <?php $__env->stopSection(); ?>
 <?php $__env->startSection('contenido'); ?>
-<div style="max-width: 1000px; margin: 0 auto; padding: 30px 20px;">
+<div class="migraine-form-shell">
     <h2 style="color: #2a0394;">¿Tienes dolor de cabeza?, <?php echo e(Auth::user()->nombre); ?> <?php echo e(Auth::user()->apellidos); ?></h2>
     <br>
 
     <form method="POST" action="<?php echo e(route('usuarios.guardarMigrana')); ?>">
         <?php echo csrf_field(); ?>
-        <div style="display: flex; gap: 15px; align-items: end; flex-wrap: wrap; margin-bottom: 20px;">
+        <div class="migraine-form-row">
             <div>
                 <?php if (isset($component)) { $__componentOriginal48825951aba906709626aeb69225ede5 = $component; } ?>
 <?php if (isset($attributes)) { $__attributesOriginal48825951aba906709626aeb69225ede5 = $attributes; } ?>

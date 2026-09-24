@@ -107,6 +107,10 @@ return [
     */
 
     'attributes' => [
+        'nombre' => 'el nombre',
+        'apellidos' => 'los apellidos',
+        'correo' => 'el correo electrónico',
+        'password' => 'la contraseña',
         'hora_inicio' => 'la hora de inicio',
         'hora_termina' => 'la hora de fin',
     ],
