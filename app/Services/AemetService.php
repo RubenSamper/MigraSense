@@ -1,0 +1,223 @@
+<?php
+
+namespace App\Services;
+
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Cache;
+
+class AemetService
+{
+    private string $apiKey;
+    private string $baseUrl = 'https://opendata.aemet.es/opendata/api';
+
+    public function __construct()
+    {
+        $this->apiKey = config('services.aemet.api_key');
+    }
+
+    /**
+     * AEMET responde en dos pasos: primero pide el recurso, que devuelve
+     * una URL temporal en el campo "datos"; luego hay que descargar esa URL
+     * para obtener el JSON real.
+     */
+    private function peticionDosPasos(string $endpoint): ?array
+    {
+        $primeraRespuesta = Http::withHeaders([
+            'api_key' => $this->apiKey,
+        ])->get($this->baseUrl . $endpoint);
+
+        if (!$primeraRespuesta->successful()) {
+            return null;
+        }
+
+        $cuerpo = $primeraRespuesta->json();
+
+        if (!isset($cuerpo['datos'])) {
+            return null;
+        }
+
+        $segundaRespuesta = Http::get($cuerpo['datos']);
+
+        if (!$segundaRespuesta->successful()) {
+            return null;
+        }
+
+        $textoUtf8 = mb_convert_encoding($segundaRespuesta->body(), 'UTF-8', 'ISO-8859-1');
+
+        return json_decode($textoUtf8, true);
+    }
+
+    /**
+     * Devuelve el listado completo de estaciones meteorológicas de AEMET.
+     * Se cachea 30 días porque este listado casi nunca cambia.
+     */
+    public function obtenerEstaciones(): array
+    {
+        return Cache::remember('aemet_estaciones', now()->addDays(30), function () {
+            return $this->peticionDosPasos('/valores/climatologicos/inventarioestaciones/todasestaciones') ?? [];
+        });
+    }
+
+    /**
+     * Devuelve las últimas observaciones (últimas ~24h, cada hora) de una
+     * estación concreta, identificada por su código idema.
+     */
+    public function obtenerObservacionEstacion(string $idema): array
+    {
+        return $this->peticionDosPasos("/observacion/convencional/datos/estacion/{$idema}") ?? [];
+    }
+
+    /**
+     * Convierte coordenadas AEMET (formato DDMMSSH, ej: "394924N") a grados decimales.
+     */
+    private function coordenadaADecimal(string $coordenada): float
+    {
+        $direccion = substr($coordenada, -1);
+        $numeros = substr($coordenada, 0, -1);
+
+        $grados = (int) substr($numeros, 0, 2);
+        $minutos = (int) substr($numeros, 2, 2);
+        $segundos = (int) substr($numeros, 4, 2);
+
+        $decimal = $grados + ($minutos / 60) + ($segundos / 3600);
+
+        if (in_array($direccion, ['S', 'W'])) {
+            $decimal *= -1;
+        }
+
+        return $decimal;
+    }
+
+    /**
+     * Encuentra la estación de AEMET más cercana a unas coordenadas dadas,
+     * usando la fórmula de Haversine (distancia sobre la superficie terrestre).
+     */
+    public function estacionMasCercana(float $latUsuario, float $lonUsuario): ?array
+    {
+        $estaciones = $this->obtenerEstaciones();
+
+        if (empty($estaciones)) {
+            return null;
+        }
+
+        $masCercana = null;
+        $distanciaMinima = null;
+
+        foreach ($estaciones as $estacion) {
+            if (empty($estacion['latitud']) || empty($estacion['longitud'])) {
+                continue;
+            }
+
+            $latEstacion = $this->coordenadaADecimal($estacion['latitud']);
+            $lonEstacion = $this->coordenadaADecimal($estacion['longitud']);
+
+            $distancia = $this->distanciaHaversine($latUsuario, $lonUsuario, $latEstacion, $lonEstacion);
+
+            if ($distanciaMinima === null || $distancia < $distanciaMinima) {
+                $distanciaMinima = $distancia;
+                $masCercana = $estacion;
+                $masCercana['distancia_km'] = round($distancia, 1);
+            }
+        }
+
+        return $masCercana;
+    }
+
+    private function distanciaHaversine(float $lat1, float $lon1, float $lat2, float $lon2): float
+    {
+        $radioTierraKm = 6371;
+
+        $deltaLat = deg2rad($lat2 - $lat1);
+        $deltaLon = deg2rad($lon2 - $lon1);
+
+        $a = sin($deltaLat / 2) ** 2
+            + cos(deg2rad($lat1)) * cos(deg2rad($lat2)) * sin($deltaLon / 2) ** 2;
+
+        $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
+
+        return $radioTierraKm * $c;
+    }
+
+    private const UMBRALES_SENSIBILIDAD = [
+        'poco_sensible' => ['amarillo' => 5, 'rojo' => 10],
+        'sensible' => ['amarillo' => 3, 'rojo' => 6],
+        'muy_sensible' => ['amarillo' => 1.5, 'rojo' => 3],
+    ];
+
+    /**
+     * Calcula el nivel de riesgo de migraña (verde/amarillo/rojo) según la
+     * variación de presión de las últimas observaciones y la sensibilidad
+     * configurada por el usuario.
+     */
+    public function calcularRiesgoMigrana(array $observaciones, string $sensibilidad): array
+    {
+        $presiones = array_filter(array_map(
+            fn($obs) => $obs['pres_nmar'] ?? null,
+            $observaciones
+        ), fn($valor) => $valor !== null);
+
+        if (count($presiones) < 2) {
+            return ['nivel' => 'desconocido', 'variacion_hpa' => null];
+        }
+
+        $variacion = max($presiones) - min($presiones);
+        $umbrales = self::UMBRALES_SENSIBILIDAD[$sensibilidad] ?? self::UMBRALES_SENSIBILIDAD['sensible'];
+
+        if ($variacion >= $umbrales['rojo']) {
+            $nivel = 'rojo';
+        } elseif ($variacion >= $umbrales['amarillo']) {
+            $nivel = 'amarillo';
+        } else {
+            $nivel = 'verde';
+        }
+
+        return [
+            'nivel' => $nivel,
+            'variacion_hpa' => round($variacion, 1),
+        ];
+    }
+
+    /**
+     * Devuelve la observación actual de TODAS las estaciones que reportan
+     * datos convencionales en tiempo real (no todas las estaciones del
+     * inventario general los dan).
+     */
+    public function obtenerTodasLasObservacionesActuales(): array
+    {
+        return Cache::remember('aemet_observaciones_actuales', now()->addMinutes(15), function () {
+            return $this->peticionDosPasos('/observacion/convencional/todas') ?? [];
+        });
+    }
+
+    /**
+     * Encuentra, entre las estaciones que SÍ reportan datos en tiempo real,
+     * la más cercana a unas coordenadas dadas.
+     */
+    public function estacionConDatosMasCercana(float $latUsuario, float $lonUsuario): ?array
+    {
+        $observaciones = $this->obtenerTodasLasObservacionesActuales();
+
+        if (empty($observaciones)) {
+            return null;
+        }
+
+        $masCercana = null;
+        $distanciaMinima = null;
+
+        foreach ($observaciones as $obs) {
+            if (!isset($obs['lat'], $obs['lon'])) {
+                continue;
+            }
+
+            $distancia = $this->distanciaHaversine($latUsuario, $lonUsuario, (float) $obs['lat'], (float) $obs['lon']);
+
+            if ($distanciaMinima === null || $distancia < $distanciaMinima) {
+                $distanciaMinima = $distancia;
+                $masCercana = $obs;
+                $masCercana['distancia_km'] = round($distancia, 1);
+            }
+        }
+
+        return $masCercana;
+    }
+}

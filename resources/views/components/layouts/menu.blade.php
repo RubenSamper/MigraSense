@@ -58,19 +58,32 @@
         }
     </style>
     <nav class="site-nav" aria-label="Navegación principal">
-        <a class="site-brand" href="{{ route('landingPage') }}">AquaSense</a>
+        <a class="site-brand" href="{{ route('landingPage') }}">
+            <img src="{{ asset('images/migrasense-logo.svg') }}" alt=""
+                style="height: 80px; width: auto; vertical-align: middle; margin-right: 8px;">
+        </a>
         <div class="site-nav-links">
             @auth
-            <a href="{{ route('usuarios.dashboard') }}" class="nav-link {{ request()->routeIs('usuarios.dashboard') ? 'nav-link-active' : '' }}" @if(request()->routeIs('usuarios.dashboard')) aria-current="page" @endif>Dashboard</a>
-            @if(in_array(Auth::user()->rol_id, [1, 3]))
-            <a href="{{ route('usuarios.obtenerListadoUsuarios') }}" class="nav-link {{ request()->routeIs('usuarios.obtenerListadoUsuarios') ? 'nav-link-active' : '' }}" @if(request()->routeIs('usuarios.obtenerListadoUsuarios')) aria-current="page" @endif>Usuarios</a>
-            @endif
-            <a href="{{ route('usuarios.seguimientoMigrana') }}" class="nav-link {{ request()->routeIs('usuarios.seguimientoMigrana') ? 'nav-link-active' : '' }}" @if(request()->routeIs('usuarios.seguimientoMigrana')) aria-current="page" @endif>Seguimiento</a>
-            <span class="site-user">{{ Auth::user()->nombre }} {{ Auth::user()->apellidos }}</span>
-            <a href="{{ route('usuarios.logout') }}" class="nav-link nav-link-border">Cerrar sesión</a>
+                <a href="{{ route('usuarios.dashboard') }}"
+                    class="nav-link {{ request()->routeIs('usuarios.dashboard') ? 'nav-link-active' : '' }}"
+                    @if(request()->routeIs('usuarios.dashboard')) aria-current="page" @endif>Dashboard</a>
+                @if(in_array(Auth::user()->rol_id, [1, 3]))
+                    <a href="{{ route('usuarios.obtenerListadoUsuarios') }}"
+                        class="nav-link {{ request()->routeIs('usuarios.obtenerListadoUsuarios') ? 'nav-link-active' : '' }}"
+                        @if(request()->routeIs('usuarios.obtenerListadoUsuarios')) aria-current="page" @endif>Usuarios</a>
+                @endif
+                <a href="{{ route('usuarios.seguimientoMigrana') }}"
+                    class="nav-link {{ request()->routeIs('usuarios.seguimientoMigrana') ? 'nav-link-active' : '' }}"
+                    @if(request()->routeIs('usuarios.seguimientoMigrana')) aria-current="page" @endif>Seguimiento</a>
+                <a href="{{ route('usuarios.configuracion') }}"
+                    class="nav-link {{ request()->routeIs('usuarios.configuracion') ? 'nav-link-active' : '' }}"
+                    @if(request()->routeIs('usuarios.configuracion')) aria-current="page" @endif>Configuración</a>
+
+                <span class="site-user">{{ Auth::user()->nombre }} {{ Auth::user()->apellidos }}</span>
+                <a href="{{ route('usuarios.logout') }}" class="nav-link nav-link-border">Cerrar sesión</a>
             @else
-            <a href="{{ route('usuarios.createUsuario') }}" class="nav-link nav-link-border">Crear usuario</a>
-            <a href="{{ route('usuarios.login') }}" class="nav-link nav-link-primary">Iniciar sesión</a>
+                <a href="{{ route('usuarios.createUsuario') }}" class="nav-link nav-link-border">Crear usuario</a>
+                <a href="{{ route('usuarios.login') }}" class="nav-link nav-link-primary">Iniciar sesión</a>
             @endauth
         </div>
     </nav>
@@ -119,15 +132,35 @@
                 gap: 10px;
             }
 
-            .site-brand { text-align: center; }
-            .site-nav-links { justify-content: center; }
-            .site-user { max-width: 100%; }
+            .site-brand {
+                text-align: center;
+            }
+
+            .site-nav-links {
+                justify-content: center;
+            }
+
+            .site-user {
+                max-width: 100%;
+            }
         }
 
         @media (max-width: 430px) {
-            .site-nav-links { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); width: 100%; }
-            .site-nav-links .nav-link { text-align: center; padding: 9px 8px; }
-            .site-user { grid-column: 1 / -1; text-align: center; }
+            .site-nav-links {
+                display: grid;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                width: 100%;
+            }
+
+            .site-nav-links .nav-link {
+                text-align: center;
+                padding: 9px 8px;
+            }
+
+            .site-user {
+                grid-column: 1 / -1;
+                text-align: center;
+            }
         }
     </style>
 </header>

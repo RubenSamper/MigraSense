@@ -1,8 +1,6 @@
-    @extends("layouts.default")
-    @section('title','Dashboard')
-    @section('scripts')
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+@extends("layouts.default")
+@section('title', 'Dashboard')
+@section('scripts')
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         .weather-dashboard {
@@ -13,7 +11,7 @@
             --soft: #f2f7f8;
             --accent: #006994;
             --warm: #e15b45;
-            max-width: 1120px;
+            max-width: 900px;
             margin: 0 auto;
             padding: 42px 24px 56px;
             color: var(--ink);
@@ -43,136 +41,58 @@
             color: var(--muted);
         }
 
-        .weather-controls,
-        .weather-chart-panel,
-        .weather-current {
-            background: var(--surface);
-            border: 1px solid var(--line);
-            box-shadow: 0 12px 30px rgba(23, 48, 66, 0.07);
-        }
-
-        .weather-controls {
-            display: grid;
-            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
-            gap: 16px;
-            align-items: end;
-            padding: 18px;
-            border-radius: 12px;
-        }
-
-        .weather-controls-heading {
-            grid-column: 1 / -1;
-            margin: 0;
-            color: var(--ink);
-            font-size: 1rem;
-        }
-
-        .weather-controls-note {
-            grid-column: 1 / -1;
-            margin: -9px 0 0;
-            color: var(--muted);
-            font-size: .84rem;
-        }
-
-        .weather-map-panel {
+        .risk-card {
+            display: flex;
+            align-items: center;
+            gap: 24px;
             margin-bottom: 24px;
-            padding: 18px;
+            padding: 28px;
+            border-radius: 16px;
             border: 1px solid var(--line);
-            border-radius: 12px;
             background: var(--surface);
             box-shadow: 0 12px 30px rgba(23, 48, 66, 0.07);
         }
 
-        .weather-map-heading {
-            display: flex;
-            justify-content: space-between;
-            gap: 16px;
-            align-items: baseline;
-            margin-bottom: 12px;
+        .risk-face {
+            flex-shrink: 0;
+            width: 110px;
+            height: 110px;
         }
 
-        .weather-map-heading h3 {
+        .risk-text h3 {
+            margin: 0 0 6px;
+            font-size: 1.3rem;
+        }
+
+        .risk-text p {
             margin: 0;
-            font-size: 1.1rem;
-        }
-
-        .weather-map-heading span {
             color: var(--muted);
-            font-size: 0.85rem;
         }
 
-        .weather-map-action {
-            min-height: 36px;
-            padding: 7px 12px;
-            border: 1px solid #b9d1d9;
-            border-radius: 7px;
-            background: #f1f8fa;
-            color: var(--accent);
-            cursor: pointer;
-            font-weight: 700;
+        .risk-card.verde {
+            border-color: #bfe3c5;
+            background: #f3fbf4;
         }
 
-        .weather-map-action:hover {
-            border-color: var(--accent);
-            background: #e1f0f3;
+        .risk-card.amarillo {
+            border-color: #f3dd9c;
+            background: #fffaf0;
         }
 
-        .weather-map-status {
-            min-height: 20px;
-            margin: 10px 0 0;
-            color: var(--muted);
-            font-size: 0.82rem;
+        .risk-card.rojo {
+            border-color: #f0b8ae;
+            background: #fff3f1;
         }
 
-        #weatherMap {
-            height: 330px;
-            overflow: hidden;
-            border-radius: 8px;
-        }
-
-        .weather-field {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
-
-        .weather-field label {
-            color: var(--muted);
-            font-size: 0.82rem;
-            font-weight: 700;
-        }
-
-        .weather-field input {
-            width: 100%;
-            box-sizing: border-box;
-            min-height: 40px;
-            padding: 8px 11px;
-            border: 1px solid #cbd9de;
-            border-radius: 7px;
-            color: var(--ink);
-            background: #fff;
-        }
-
-        .weather-button {
-            min-height: 40px;
-            padding: 8px 18px;
-            border: 0;
-            border-radius: 7px;
-            background: var(--accent);
-            color: #fff;
-            font-weight: 700;
-            cursor: pointer;
-        }
-
-        .weather-button:hover {
-            background: #004f70;
+        .risk-card.desconocido {
+            border-color: var(--line);
         }
 
         .weather-current {
             display: grid;
             grid-template-columns: repeat(2, minmax(0, 1fr));
             gap: 1px;
-            margin: 24px 0;
+            margin-bottom: 24px;
             overflow: hidden;
             border-radius: 12px;
             background: var(--line);
@@ -198,579 +118,498 @@
             color: var(--warm);
         }
 
-        .weather-stat-value.wind {
+        .weather-stat-value.pressure {
             color: var(--accent);
         }
 
         .weather-chart-panel {
             padding: 22px;
             border-radius: 12px;
-        }
-
-        .weather-chart-heading {
-            display: flex;
-            justify-content: space-between;
-            gap: 16px;
-            align-items: baseline;
-            margin-bottom: 18px;
-        }
-
-        .weather-chart-heading h3 {
-            margin: 0;
-            font-size: 1.1rem;
-        }
-
-        .weather-chart-heading span {
-            color: var(--muted);
-            font-size: 0.85rem;
-        }
-
-        .weather-days {
-            display: grid;
-            grid-template-columns: repeat(7, minmax(76px, 1fr));
-            gap: 8px;
+            background: var(--surface);
+            border: 1px solid var(--line);
+            box-shadow: 0 12px 30px rgba(23, 48, 66, 0.07);
             margin-bottom: 24px;
         }
 
-        .weather-day {
-            min-height: 58px;
-            padding: 8px 5px;
-            border: 1px solid var(--line);
-            border-radius: 8px;
-            background: var(--soft);
-            color: var(--accent);
-            cursor: pointer;
-            font-weight: 700;
+        .weather-chart-panel h3 {
+            margin: 0 0 4px;
+            font-size: 1.1rem;
         }
 
-        .weather-day:hover,
-        .weather-day.is-active {
-            border-color: var(--accent);
-            background: var(--accent);
-            color: #fff;
+        .weather-chart-panel span {
+            color: var(--muted);
+            font-size: 0.85rem;
         }
 
         .weather-chart {
             position: relative;
-            height: 360px;
+            height: 320px;
+            margin-top: 16px;
         }
 
-        .weather-status {
-            min-height: 20px;
-            margin: 12px 0 0;
+        .weather-empty {
+            padding: 28px;
+            border-radius: 12px;
+            border: 1px dashed var(--line);
+            color: var(--muted);
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .weather-empty a {
+            color: var(--accent);
+            font-weight: 700;
+        }
+
+        .quick-action {
+            margin-bottom: 24px;
+            text-align: center;
+        }
+
+        .quick-action-button {
+            min-height: 46px;
+            padding: 12px 28px;
+            border: 0;
+            border-radius: 10px;
+            background: var(--accent);
+            color: #fff;
+            font-weight: 700;
+            font-size: 1rem;
+            cursor: pointer;
+        }
+
+        .quick-action-button:hover {
+            background: #004f70;
+        }
+
+        .migraine-modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 1500;
+            background: rgba(23, 48, 66, 0.45);
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .migraine-modal-overlay.is-open {
+            display: flex;
+        }
+
+        .migraine-modal {
+            width: 100%;
+            max-width: 520px;
+            max-height: 90vh;
+            overflow-y: auto;
+            background: #fff;
+            border-radius: 14px;
+            padding: 24px;
+        }
+
+        .migraine-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 18px;
+        }
+
+        .migraine-modal-header h3 {
+            margin: 0;
+            color: var(--ink);
+        }
+
+        .migraine-modal-close {
+            border: 0;
+            background: none;
+            font-size: 1.5rem;
+            line-height: 1;
+            cursor: pointer;
+            color: var(--muted);
+        }
+
+        .migraine-modal-row {
+            display: flex;
+            gap: 14px;
+            flex-wrap: wrap;
+            margin-bottom: 16px;
+        }
+
+        .migraine-modal-row>div {
+            flex: 1;
+            min-width: 160px;
+        }
+
+        .migraine-modal-field {
+            margin-bottom: 16px;
+        }
+
+        .migraine-modal-field label {
+            display: block;
+            margin-bottom: 6px;
             color: var(--muted);
             font-size: 0.85rem;
+            font-weight: 700;
         }
 
-        .weather-alerts {
-            margin-bottom: 24px;
-            padding: 22px;
-            border: 1px solid #f0c9a8;
-            border-radius: 12px;
-            background: linear-gradient(135deg, #fffaf5 0%, #fff3e8 100%);
-        }
-
-        .weather-alerts h3 {
-            margin: 0;
-            color: #9b3f2d;
-            font-size: 1.05rem;
-        }
-
-        .weather-alerts-note {
-            margin: 5px 0 16px;
-            color: #7c665b;
-            font-size: .86rem;
-        }
-
-        .weather-alerts-list {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 12px;
-            margin: 0;
-            padding: 0;
-            list-style: none;
-        }
-
-        .weather-alert {
-            min-height: 94px;
-            padding: 14px;
-            border: 1px solid #f0d9c8;
-            border-radius: 9px;
-            background: rgba(255, 255, 255, .72);
-        }
-
-        .weather-alert strong { display: block; color: #173042; font-size: .95rem; }
-        .weather-alert span { display: block; margin-top: 8px; color: #647783; font-size: .88rem; line-height: 1.45; }
-        .weather-alerts-empty { margin: 0; color: #647783; }
-
-        .weather-table-wrap {
-            margin-top: 24px;
-            overflow-x: auto;
-        }
-
-        .weather-table {
+        .migraine-modal-field textarea {
             width: 100%;
-            border-collapse: collapse;
-            color: var(--ink);
-            font-size: 0.9rem;
+            box-sizing: border-box;
+            padding: 8px 11px;
+            border: 1px solid var(--line);
+            border-radius: 7px;
+            font: inherit;
         }
 
-        .weather-table th,
-        .weather-table td {
-            padding: 12px 14px;
-            border-bottom: 1px solid var(--line);
-            text-align: left;
+        .date-field {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
         }
 
-        .weather-table th {
+        .date-field label {
             color: var(--muted);
-            font-size: 0.75rem;
-            letter-spacing: 0.05em;
-            text-transform: uppercase;
+            font-size: 0.85rem;
+            font-weight: 700;
         }
 
-        @media (max-width: 700px) {
-            .weather-dashboard {
-                padding: 28px 16px 40px;
+        .date-field input {
+            min-height: 40px;
+            padding: 8px 11px;
+            border: 1px solid var(--line);
+            border-radius: 7px;
+            font: inherit;
+        }
+
+        .field-error {
+            margin: 8px 0 0;
+            color: #b42318;
+            font-size: 0.82rem;
+            font-weight: 600;
+        }
+
+        .migraine-modal-submit {
+            min-height: 42px;
+            padding: 10px 22px;
+            border: 0;
+            border-radius: 7px;
+            background: var(--accent);
+            color: #fff;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        @media (max-width: 600px) {
+            .risk-card {
+                flex-direction: column;
+                text-align: center;
             }
 
-            .weather-controls {
+            .weather-current {
                 grid-template-columns: 1fr;
             }
-
-            .weather-controls-heading,
-            .weather-controls-note {
-                grid-column: auto;
-            }
-
-            .weather-field input,
-            .weather-button {
-                width: 100%;
-            }
-
-            .weather-days {
-                grid-template-columns: repeat(4, 1fr);
-            }
-
-            .weather-chart {
-                height: 300px;
-            }
-
-            #weatherMap {
-                height: 280px;
-            }
-
-            .weather-map-heading {
-                display: block;
-            }
         }
 
-        @media (max-width: 480px) {
-            .weather-dashboard { padding-inline: 12px; }
-            .weather-controls { padding: 14px; }
-            .weather-current { grid-template-columns: 1fr; }
-            .weather-chart-panel { padding: 16px; }
-            .weather-chart-heading { display: block; }
-            .weather-chart-heading span { display: block; margin-top: 6px; }
-            .weather-days { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-            .weather-day { min-height: 48px; }
+        @media (max-width: 500px) {
+            .migraine-modal-row {
+                flex-direction: column;
+            }
         }
     </style>
     <script>
-        let chart = null;
-        let pronostico = null;
-        let mapa = null;
-        let marcador = null;
-
-        function nombreDia(fecha) {
-            return new Intl.DateTimeFormat('es-ES', {
-                weekday: 'long',
-                day: 'numeric',
-                month: 'long'
-            }).format(new Date(`${fecha}T12:00:00`));
+        function abrirModalMigrana() {
+            $('#modalMigrana').addClass('is-open');
         }
 
-        function mostrarDia(indice) {
-            const dia = pronostico.dias[indice];
-            const horasDelDia = pronostico.hourly.time
-                .map((hora, horaIndice) => ({
-                    hora,
-                    horaIndice
-                }))
-                .filter(({
-                    hora
-                }) => hora.slice(0, 10) === dia);
+        function limpiarErroresModal() {
+            document.querySelectorAll('#modalMigrana .field-error').forEach((el) => el.textContent = '');
+        }
 
-            if (chart) chart.destroy();
+        function mostrarErrorCampoModal(id, mensaje) {
+            const el = document.getElementById(id);
+            if (el) el.textContent = mensaje;
+        }
 
-            chart = new Chart(document.getElementById('chart'), {
-                type: 'line',
-                data: {
-                    labels: horasDelDia.map(({
-                        hora
-                    }) => hora.slice(11, 16)),
-                    datasets: [{
-                        label: 'Temperatura (°C)',
-                        data: horasDelDia.map(({
-                            horaIndice
-                        }) => pronostico.hourly.temperature_2m[horaIndice]),
-                        borderColor: '#e74c3c',
-                        backgroundColor: 'rgba(231, 76, 60, 0.12)',
-                        tension: 0.3,
-                        fill: true,
-                        yAxisID: 'temperatura'
-                    }, {
-                        label: 'Viento (km/h)',
-                        data: horasDelDia.map(({
-                            horaIndice
-                        }) => pronostico.hourly.wind_speed_10m[horaIndice]),
-                        borderColor: '#006994',
-                        backgroundColor: 'rgba(0, 105, 148, 0.1)',
-                        tension: 0.3,
-                        fill: true,
-                        yAxisID: 'viento'
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    interaction: {
-                        mode: 'index',
-                        intersect: false
+        function cerrarModalMigrana() {
+            $('#modalMigrana').removeClass('is-open');
+            limpiarErroresModal();
+        }
+
+        @if ($datosClima)
+            const observaciones = @json($datosClima['observaciones']);
+        @endif
+
+        $(function () {
+            @if ($datosClima)
+                new Chart(document.getElementById('chart'), {
+                    type: 'line',
+                    data: {
+                        labels: observaciones.map((obs) => obs.hora),
+                        datasets: [{
+                            label: 'Temperatura (°C)',
+                            data: observaciones.map((obs) => obs.temperatura),
+                            borderColor: '#e74c3c',
+                            backgroundColor: 'rgba(231, 76, 60, 0.12)',
+                            tension: 0.3,
+                            fill: true,
+                            yAxisID: 'temperatura'
+                        }, {
+                            label: 'Presión (hPa)',
+                            data: observaciones.map((obs) => obs.presion),
+                            borderColor: '#006994',
+                            backgroundColor: 'rgba(0, 105, 148, 0.1)',
+                            tension: 0.3,
+                            fill: true,
+                            yAxisID: 'presion'
+                        }]
                     },
-                    plugins: {
-                        title: {
-                            display: true,
-                            text: `Tiempo del ${nombreDia(dia)}`
-                        }
-                    },
-                    scales: {
-                        temperatura: {
-                            position: 'left',
-                            title: {
-                                display: true,
-                                text: 'Temperatura (°C)'
-                            }
-                        },
-                        viento: {
-                            position: 'right',
-                            title: {
-                                display: true,
-                                text: 'Viento (km/h)'
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        interaction: { mode: 'index', intersect: false },
+                        scales: {
+                            temperatura: {
+                                position: 'left',
+                                title: { display: true, text: 'Temperatura (°C)' }
                             },
-                            grid: {
-                                drawOnChartArea: false
+                            presion: {
+                                position: 'right',
+                                title: { display: true, text: 'Presión (hPa)' },
+                                grid: { drawOnChartArea: false }
                             }
                         }
                     }
+                });
+            @endif
+
+            document.getElementById('modal_hora_inicio').addEventListener('input', actualizarLimitesModal);
+            document.getElementById('modal_hora_termina').addEventListener('input', actualizarLimitesModal);
+            actualizarLimitesModal();
+
+            $('#formMigranaModal').on('submit', function (evento) {
+                evento.preventDefault();
+
+                limpiarErroresModal();
+
+                let hayErrores = false;
+
+                if (!$('input[name="tipo_migrana"]:checked').length) {
+                    mostrarErrorCampoModal('modal_error_tipo_migrana', 'Selecciona un tipo de migraña.');
+                    hayErrores = true;
                 }
-            });
-
-            document.querySelectorAll('[data-dia-indice]').forEach((boton) => {
-                const seleccionado = Number(boton.dataset.diaIndice) === indice;
-                boton.style.background = seleccionado ? '#006994' : 'white';
-                boton.style.color = seleccionado ? 'white' : '#006994';
-                boton.classList.toggle('is-active', seleccionado);
-            });
-        }
-
-        function mostrarTablaSemana() {
-            const filas = pronostico.dias.map((fecha) => {
-                const indices = pronostico.hourly.time
-                    .map((hora, indice) => ({ hora, indice }))
-                    .filter(({ hora }) => hora.slice(0, 10) === fecha)
-                    .map(({ indice }) => indice);
-                const temperaturas = indices.map((indice) => pronostico.hourly.temperature_2m[indice]);
-                const vientos = indices.map((indice) => pronostico.hourly.wind_speed_10m[indice]);
-
-                return `<tr>
-                    <td>${new Intl.DateTimeFormat('es-ES', { weekday: 'long', day: 'numeric', month: 'short' }).format(new Date(`${fecha}T12:00:00`))}</td>
-                    <td>${Math.min(...temperaturas)} °C / ${Math.max(...temperaturas)} °C</td>
-                    <td>${Math.max(...vientos)} km/h</td>
-                </tr>`;
-            }).join('');
-
-            $('#tablaSemana').html(filas);
-        }
-
-        function cargarDatos() {
-            const lat = $('#latitud').val();
-            const lon = $('#longitud').val();
-
-            if (!lat || !lon) {
-                alert('Selecciona una zona o introduce latitud y longitud.');
-                return;
-            }
-
-            $('#weatherStatus').text('Cargando previsión...');
-
-            const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,wind_speed_10m,surface_pressure&hourly=temperature_2m,wind_speed_10m,surface_pressure&forecast_days=7&timezone=auto`;
-
-            $.ajax({
-                url: url,
-                type: 'GET',
-                success: function(data) {
-                    data.dias = [...new Set(data.hourly.time.map((hora) => hora.slice(0, 10)))];
-                    pronostico = data;
-                    $('#currentTemp').text(`${data.current.temperature_2m}°C`);
-                    $('#currentWind').text(`${data.current.wind_speed_10m} km/h`);
-
-                    $('#diasSemana').html(data.dias.map((fecha, indice) => `
-                        <button type="button" class="weather-day" data-dia-indice="${indice}" onclick="mostrarDia(${indice})">
-                            ${new Intl.DateTimeFormat('es-ES', { weekday: 'short', day: 'numeric' }).format(new Date(`${fecha}T12:00:00`))}
-                        </button>
-                    `).join(''));
-
-                    mostrarDia(0);
-                    mostrarTablaSemana();
-                    guardarAlertasClima();
-                    $('#weatherStatus').text('Previsión actualizada para los próximos 7 días.');
-                    guardarZona(lat, lon);
-                },
-                error: function() {
-                    $('#weatherStatus').text('No se pudo cargar la previsión. Revisa la ubicación e inténtalo de nuevo.');
-                    alert('Error al cargar los datos meteorológicos.');
+                if (!$('input[name="intensidad"]:checked').length) {
+                    mostrarErrorCampoModal('modal_error_intensidad', 'Selecciona la intensidad.');
+                    hayErrores = true;
                 }
-            });
-        }
-
-        function guardarAlertasClima() {
-    const presionesDiarias = pronostico.dias.map((fecha) => {
-        const indice = pronostico.hourly.time.findIndex(
-            (hora) => hora === `${fecha}T00:00`
-        );
-
-        return indice >= 0
-            ? pronostico.hourly.surface_pressure[indice]
-            : null;
-    });
-
-    console.log('DIAS:', pronostico.dias);
-    console.log('PRESIONES:', presionesDiarias);
-
-    const alertas = pronostico.dias.slice(1).reduce((resultado, fecha, indice) => {
-        const indiceDia = indice + 1;
-        const presionDia = presionesDiarias[indiceDia];
-        const presionDiaAnterior = presionesDiarias[indice];
-
-        if (
-            typeof presionDia !== 'number' ||
-            typeof presionDiaAnterior !== 'number'
-        ) {
-            return resultado;
-        }
-
-        const variacionHpa = Math.abs(presionDia - presionDiaAnterior);
-
-        if (variacionHpa >= 2) {
-            const direccion = presionDia > presionDiaAnterior ? 'sube' : 'baja';
-            const riesgoAlto = variacionHpa >= 10;
-
-            resultado.push({
-                fecha,
-                variacion_hpa: Number(variacionHpa.toFixed(1)),
-                riesgo_alto: riesgoAlto,
-                aviso: riesgoAlto
-                    ? `La presión atmosférica ${direccion} ${variacionHpa.toFixed(1)} hPa respecto al día anterior. Presta atención a posibles síntomas tempranos de migraña.`
-                    : `La presión atmosférica ${direccion} ${variacionHpa.toFixed(1)} hPa respecto al día anterior. Es un cambio moderado, pero conviene estar atento.`
-            });
-        }
-
-        return resultado;
-    }, []);
-
-    console.log('ALERTAS:', alertas);
-
-    $.ajax({
-        url: "{{ route('usuarios.guardarAlertasClima') }}",
-        type: "POST",
-        data: {
-            _token: "{{ csrf_token() }}",
-            alertas: alertas
-        },
-        success: function () {
-            $('#weatherAlertStatus').text(
-                alertas.length
-                    ? `Se han actualizado ${alertas.length} aviso(s).`
-                    : 'No hay cambios significativos de presión en esta previsión.'
-            );
-        },
-        error: function () {
-            $('#weatherAlertStatus').text(
-                'No se pudieron guardar los avisos meteorológicos.'
-            );
-        }
-    });
-}
-
-        function actualizarMapa(lat, lon) {
-            const ubicacion = [Number(lat), Number(lon)];
-
-            if (!mapa) return;
-
-            if (!marcador) {
-                marcador = L.marker(ubicacion).addTo(mapa);
-            } else {
-                marcador.setLatLng(ubicacion);
-            }
-
-            mapa.flyTo(ubicacion, Math.max(mapa.getZoom(), 6), { duration: 0.6 });
-            marcador.bindPopup(`Ubicación seleccionada<br>${Number(lat).toFixed(4)}, ${Number(lon).toFixed(4)}`).openPopup();
-            $('#weatherMapStatus').text(`Ubicación seleccionada: ${Number(lat).toFixed(4)}, ${Number(lon).toFixed(4)}`);
-        }
-
-        function usarMiUbicacion() {
-            if (!navigator.geolocation) {
-                $('#weatherMapStatus').text('Tu navegador no permite obtener la ubicación.');
-                return;
-            }
-
-            $('#weatherMapStatus').text('Obteniendo tu ubicación...');
-
-            navigator.geolocation.getCurrentPosition(
-                (posicion) => {
-                    const lat = posicion.coords.latitude.toFixed(6);
-                    const lon = posicion.coords.longitude.toFixed(6);
-
-                    $('#latitud').val(lat);
-                    $('#longitud').val(lon);
-                    actualizarMapa(lat, lon);
-                },
-                () => $('#weatherMapStatus').text('No se pudo obtener tu ubicación. Revisa los permisos del navegador.'),
-                { enableHighAccuracy: true, timeout: 10000, maximumAge: 300000 }
-            );
-        }
-
-        function inicializarMapa() {
-            mapa = L.map('weatherMap').setView([40.4168, -3.7038], 5);
-
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                maxZoom: 19,
-                attribution: '&copy; OpenStreetMap contributors'
-            }).addTo(mapa);
-
-            mapa.on('click', (evento) => {
-                const lat = evento.latlng.lat.toFixed(6);
-                const lon = evento.latlng.lng.toFixed(6);
-
-                $('#latitud').val(lat);
-                $('#longitud').val(lon);
-                actualizarMapa(lat, lon);
-            });
-
-            setTimeout(() => mapa.invalidateSize(), 100);
-        }
-
-        function guardarZona(lat, lon) {
-            $.ajax({
-                url: "{{ route('usuarios.guardarZona') }}",
-                type: 'POST',
-                data: {
-                    _token: '{{ csrf_token() }}',
-                    latitud: lat,
-                    longitud: lon
+                if (!$('#modal_hora_inicio').val()) {
+                    mostrarErrorCampoModal('modal_error_hora_inicio', 'Indica la hora de inicio.');
+                    hayErrores = true;
                 }
+                if (!$('#modal_hora_termina').val()) {
+                    mostrarErrorCampoModal('modal_error_hora_termina', 'Indica la hora de fin.');
+                    hayErrores = true;
+                }
+
+                if (hayErrores) {
+                    return;
+                }
+
+                $.ajax({
+                    url: $(this).attr('action'),
+                    type: 'POST',
+                    data: $(this).serialize(),
+                    success: function () {
+                        window.location.href = window.location.pathname + '?registrado=1';
+                    },
+                    error: function (xhr) {
+                        if (xhr.responseJSON && xhr.responseJSON.errors) {
+                            const errores = xhr.responseJSON.errors;
+                            if (errores.tipo_migrana) mostrarErrorCampoModal('modal_error_tipo_migrana', errores.tipo_migrana[0]);
+                            if (errores.intensidad) mostrarErrorCampoModal('modal_error_intensidad', errores.intensidad[0]);
+                            if (errores.hora_inicio) mostrarErrorCampoModal('modal_error_hora_inicio', errores.hora_inicio[0]);
+                            if (errores.hora_termina) mostrarErrorCampoModal('modal_error_hora_termina', errores.hora_termina[0]);
+                        }
+                    }
+                });
             });
-        }
 
-        const latitudGuardada = '{{ Auth::user()->latitud }}';
-        const longitudGuardada = '{{ Auth::user()->longitud }}';
+            const paramsDashboard = new URLSearchParams(window.location.search);
+            const stack = document.querySelector('.notification-stack');
 
-        $(function() {
-            inicializarMapa();
+            function mostrarNotificacionExito(mensaje) {
+                if (!stack) return;
 
-            if (latitudGuardada && longitudGuardada) {
-                $('#latitud').val(latitudGuardada);
-                $('#longitud').val(longitudGuardada);
-                actualizarMapa(latitudGuardada, longitudGuardada);
-                cargarDatos();
+                const item = document.createElement('div');
+                item.className = 'notification-item';
+                item.innerHTML = `
+            <div class="notification notification-success" role="status" aria-live="polite">
+                <div class="notification-mark" aria-hidden="true">✓</div>
+                <div class="notification-content">
+                    <strong>Éxito</strong>
+                    <span>${mensaje}</span>
+                </div>
+            </div>
+        `;
+                stack.appendChild(item);
             }
+
+            if (paramsDashboard.get('registrado') === '1') {
+                mostrarNotificacionExito('Migraña registrada correctamente.');
+                paramsDashboard.delete('registrado');
+            }
+
+            if (paramsDashboard.get('config_guardada') === '1') {
+                mostrarNotificacionExito('Configuración guardada correctamente.');
+                paramsDashboard.delete('config_guardada');
+            }
+
+            const nuevaUrlDashboard = window.location.pathname + (paramsDashboard.toString() ? '?' + paramsDashboard.toString() : '');
+            window.history.replaceState({}, '', nuevaUrlDashboard);
         });
+
+        function actualizarLimitesModal() {
+            const inicio = document.getElementById('modal_hora_inicio');
+            const fin = document.getElementById('modal_hora_termina');
+
+            if (inicio.value) {
+                fin.min = inicio.value;
+            }
+        }
     </script>
-    @endsection
-    @section('contenido')
+@endsection
+@section('contenido')
     <main class="weather-dashboard">
         <header class="weather-intro">
             <p class="weather-kicker">Panel meteorológico</p>
-            <h2>Hola, {{ Auth::user()->nombre }} {{ Auth::user()->apellidos }}</h2>
-            <p>Consulta las condiciones actuales y explora la previsión hora a hora.</p>
+            <h2>Hola, {{ Auth::user()->nombre }}</h2>
+            <p>Riesgo de migraña según la presión atmosférica en tu zona.</p>
         </header>
 
-        <section class="weather-alerts" aria-label="Avisos de migraña">
-            <h3>Avisos de migraña</h3>
-            <p class="weather-alerts-note">Solo se muestran cambios fuertes: 2 hPa o más en 24 horas.</p>
-            @if ($recordatorios->isEmpty())
-                <p class="weather-alerts-empty">Todavía no hay avisos para los próximos días. Actualiza la previsión para comprobar las condiciones.</p>
-            @else
-                <ul class="weather-alerts-list">
-                    @foreach ($recordatorios as $recordatorio)
-                        <li class="weather-alert">
-                            <strong>{{ $recordatorio->fecha_recordatorio->translatedFormat('l, j \d\e F') }}</strong>
-                            <span>{{ $recordatorio->descripcion }}</span>
-                        </li>
-                    @endforeach
-                </ul>
-            @endif
-            <p id="weatherAlertStatus" class="weather-status" role="status"></p>
-        </section>
-
-        <section class="weather-map-panel" aria-label="Selector de ubicación en el mapa">
-            <div class="weather-map-heading">
-                <div>
-                    <h3>Selecciona una ubicación en el mapa</h3>
-                    <span>Haz clic para colocar el marcador</span>
+        @if (!$datosClima)
+            <div class="weather-empty">
+                <p>Todavía no tenemos tu ubicación. Ve a <a href="{{ route('usuarios.configuracion') }}">Configuración</a> para
+                    activarla y empezar a ver tu riesgo diario.</p>
+            </div>
+        @else
+            <section class="risk-card {{ $riesgo['nivel'] }}">
+                <div class="risk-face">
+                    @if ($riesgo['nivel'] === 'verde')
+                        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="50" cy="50" r="46" fill="#4caf6d" />
+                            <circle cx="34" cy="42" r="6" fill="#173042" />
+                            <circle cx="66" cy="42" r="6" fill="#173042" />
+                            <path d="M30 62 Q50 82 70 62" stroke="#173042" stroke-width="5" fill="none" stroke-linecap="round" />
+                        </svg>
+                    @elseif ($riesgo['nivel'] === 'amarillo')
+                        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="50" cy="50" r="46" fill="#f2c94c" />
+                            <circle cx="34" cy="42" r="6" fill="#173042" />
+                            <circle cx="66" cy="42" r="6" fill="#173042" />
+                            <path d="M32 66 Q50 60 68 66" stroke="#173042" stroke-width="5" fill="none" stroke-linecap="round" />
+                        </svg>
+                    @elseif ($riesgo['nivel'] === 'rojo')
+                        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="50" cy="50" r="46" fill="#e15b45" />
+                            <circle cx="34" cy="42" r="6" fill="#173042" />
+                            <circle cx="66" cy="42" r="6" fill="#173042" />
+                            <path d="M30 70 Q50 54 70 70" stroke="#173042" stroke-width="5" fill="none" stroke-linecap="round" />
+                        </svg>
+                    @else
+                        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="50" cy="50" r="46" fill="#dce7eb" />
+                            <circle cx="34" cy="42" r="6" fill="#647783" />
+                            <circle cx="66" cy="42" r="6" fill="#647783" />
+                            <line x1="32" y1="64" x2="68" y2="64" stroke="#647783" stroke-width="5" stroke-linecap="round" />
+                        </svg>
+                    @endif
                 </div>
-                <button class="weather-map-action" type="button" onclick="usarMiUbicacion()">Usar mi ubicación</button>
-            </div>
-            <div id="weatherMap" tabindex="0" aria-label="Mapa interactivo. Usa el teclado para desplazarte y los campos de coordenadas para introducir una ubicación exacta."></div>
-            <p id="weatherMapStatus" class="weather-map-status" role="status">Selecciona un punto o usa tu ubicación.</p>
+                <div class="risk-text">
+                    @if ($riesgo['nivel'] === 'verde')
+                        <h3>Riesgo bajo</h3>
+                        <p>La presión atmosférica está estable en tu zona.</p>
+                    @elseif ($riesgo['nivel'] === 'amarillo')
+                        <h3>Riesgo moderado</h3>
+                        <p>Hay un cambio de presión notable. Presta atención a posibles síntomas.</p>
+                    @elseif ($riesgo['nivel'] === 'rojo')
+                        <h3>Riesgo alto</h3>
+                        <p>Cambio fuerte de presión atmosférica. Es un desencadenante habitual de migraña.</p>
+                    @else
+                        <h3>Sin datos suficientes</h3>
+                        <p>No hemos podido calcular tu riesgo con los datos disponibles ahora mismo.</p>
+                    @endif
+                    @if ($riesgo['variacion_hpa'] !== null)
+                        <p>Variación detectada: {{ $riesgo['variacion_hpa'] }} hPa</p>
+                    @endif
+                </div>
+            </section>
+
+            <section class="weather-current">
+                <div class="weather-stat">
+                    <div class="weather-stat-label">Temperatura actual · {{ $datosClima['estacion_nombre'] }}</div>
+                    <div class="weather-stat-value temperature">{{ $datosClima['temperatura_actual'] }}°C</div>
+                </div>
+                <div class="weather-stat">
+                    <div class="weather-stat-label">Presión atmosférica actual</div>
+                    <div class="weather-stat-value pressure">{{ $datosClima['presion_actual'] }} hPa</div>
+                </div>
+            </section>
+
+            <section class="weather-chart-panel">
+                <h3>Evolución de hoy</h3>
+                <span>Temperatura y presión atmosférica</span>
+                <div class="weather-chart"><canvas id="chart"></canvas></div>
+            </section>
+        @endif
+
+        <section class="quick-action">
+            <button type="button" class="quick-action-button" onclick="abrirModalMigrana()">+ Registrar migraña
+                ahora</button>
         </section>
 
-        <section class="weather-controls" aria-label="Ubicación de la previsión">
-            <h3 class="weather-controls-heading">Coordenadas seleccionadas</h3>
-            <p class="weather-controls-note">Puedes hacer clic en el mapa o ajustar los valores manualmente.</p>
-            <div class="weather-field">
-                <label for="latitud">Latitud</label>
-                <input type="text" id="latitud" placeholder="Ej: 52.52">
-            </div>
-            <div class="weather-field">
-                <label for="longitud">Longitud</label>
-                <input type="text" id="longitud" placeholder="Ej: 13.41">
-            </div>
-            <button type="button" class="weather-button" onclick="cargarDatos()">Actualizar previsión</button>
-        </section>
+        <div id="modalMigrana" class="migraine-modal-overlay">
+            <div class="migraine-modal">
+                <div class="migraine-modal-header">
+                    <h3>Registrar migraña</h3>
+                    <button type="button" class="migraine-modal-close" onclick="cerrarModalMigrana()"
+                        aria-label="Cerrar">&times;</button>
+                </div>
 
-        <section class="weather-current" aria-label="Condiciones actuales">
-            <div class="weather-stat">
-                <div class="weather-stat-label">Temperatura actual</div>
-                <div id="currentTemp" class="weather-stat-value temperature">--</div>
-            </div>
-            <div class="weather-stat">
-                <div class="weather-stat-label">Viento actual</div>
-                <div id="currentWind" class="weather-stat-value wind">--</div>
-            </div>
-        </section>
+                <form id="formMigranaModal" method="POST" action="{{ route('usuarios.guardarMigrana') }}" novalidate>
+                    @csrf
+                    <div class="migraine-modal-row">
+                        <div>
+                            <x-select-tipo-migrana />
+                            <p class="field-error" id="modal_error_tipo_migrana"></p>
+                        </div>
+                        <div>
+                            <x-select-intensidad />
+                            <p class="field-error" id="modal_error_intensidad"></p>
+                        </div>
+                    </div>
 
-        <section class="weather-chart-panel" aria-label="Previsión de siete días">
-            <div class="weather-chart-heading">
-                <h3>Previsión por horas</h3>
-                <span>Selecciona un día para explorar</span>
-            </div>
-            <div id="diasSemana" class="weather-days"></div>
-            <div class="weather-chart"><canvas id="chart"></canvas></div>
-            <p id="weatherStatus" class="weather-status" role="status">Selecciona una ubicación para cargar la previsión.</p>
-            <div class="weather-table-wrap">
-                <table class="weather-table">
-                    <thead>
-                        <tr>
-                            <th>Día</th>
-                            <th>Temperatura mínima / máxima</th>
-                            <th>Viento máximo</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tablaSemana"></tbody>
-                </table>
-            </div>
-        </section>
+                    <div class="migraine-modal-row">
+                        <div class="date-field">
+                            <label for="modal_hora_inicio">Hora de inicio</label>
+                            <input type="datetime-local" id="modal_hora_inicio" name="hora_inicio"
+                                value="{{ now()->format('Y-m-d\TH:i') }}" step="60">
+                            <p class="field-error" id="modal_error_hora_inicio"></p>
+                        </div>
+                        <div class="date-field">
+                            <label for="modal_hora_termina">Hora de fin</label>
+                            <input type="datetime-local" id="modal_hora_termina" name="hora_termina" step="60">
+                            <p class="field-error" id="modal_error_hora_termina"></p>
+                        </div>
+                    </div>
 
+                    <div class="migraine-modal-field">
+                        <label for="modal_notas">Notas (opcional)</label>
+                        <textarea id="modal_notas" name="notas" maxlength="250" rows="3"
+                            placeholder="Escribe cualquier detalle sobre la migraña"></textarea>
+                    </div>
+
+                    <button type="submit" class="migraine-modal-submit">Guardar migraña</button>
+                </form>
+            </div>
+        </div>
     </main>
-    @endsection
+@endsection

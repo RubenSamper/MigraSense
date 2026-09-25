@@ -1,23 +1,54 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="{{ asset('css/estilos.css?2') }}">
+    <link rel="icon" type="image/svg+xml" href="{{ asset('favicon.svg') }}">
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.3/jquery.min.js"></script>
 
 
-        <!-- Datatables -->
-        <link href="https://cdn.datatables.net/v/dt/dt-1.13.4/datatables.min.css" rel="stylesheet"/> 
-        <script src="https://cdn.datatables.net/v/dt/dt-1.13.4/datatables.min.js"></script>
+    <!-- Datatables -->
+    <link href="https://cdn.datatables.net/v/dt/dt-1.13.4/datatables.min.css" rel="stylesheet" />
+    <script src="https://cdn.datatables.net/v/dt/dt-1.13.4/datatables.min.js"></script>
     <title>@yield('title')</title>
     <style>
-        *, *::before, *::after { box-sizing: border-box; }
-        html { overflow-x: hidden; }
-        body { margin: 0; min-width: 320px; overflow-x: hidden; }
-        img, canvas, iframe { max-width: 100%; }
-        button, input, select, textarea { max-width: 100%; font: inherit; }
-        main, section, article, form { min-width: 0; }
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+        }
+
+        html {
+            overflow-x: hidden;
+        }
+
+        body {
+            margin: 0;
+            min-width: 320px;
+            overflow-x: hidden;
+        }
+
+        img,
+        canvas,
+        iframe {
+            max-width: 100%;
+        }
+
+        button,
+        input,
+        select,
+        textarea {
+            max-width: 100%;
+            font: inherit;
+        }
+
+        main,
+        section,
+        article,
+        form {
+            min-width: 0;
+        }
 
         :focus-visible {
             outline: 3px solid #f5b942;
@@ -36,9 +67,13 @@
             transform: translateY(-150%);
         }
 
-        .skip-link:focus { transform: translateY(0); }
+        .skip-link:focus {
+            transform: translateY(0);
+        }
 
-        .page-content:focus { outline: none; }
+        .page-content:focus {
+            outline: none;
+        }
 
         .page-shell {
             width: min(1120px, calc(100% - 32px));
@@ -46,15 +81,22 @@
         }
 
         @media (max-width: 600px) {
-            .notification-stack { right: 12px; left: 12px; }
-            .notification-stack .notification-item { width: 100%; }
+            .notification-stack {
+                right: 12px;
+                left: 12px;
+            }
+
+            .notification-stack .notification-item {
+                width: 100%;
+            }
         }
     </style>
     @yield('scripts')
 </head>
+
 <body>
     <a class="skip-link" href="#main-content">Saltar al contenido principal</a>
-    <x-layouts.menu/>
+    <x-layouts.menu />
     <div class="notification-stack" aria-label="Notificaciones">
         @foreach (['success', 'error', 'warning', 'info'] as $tipo)
             <x-notification :type="$tipo" :message="session($tipo)" />
@@ -72,7 +114,9 @@
             pointer-events: none;
         }
 
-        .notification-stack .notification-item { pointer-events: auto; }
+        .notification-stack .notification-item {
+            pointer-events: auto;
+        }
 
         @media (max-width: 600px) {
             .notification-stack {
@@ -86,26 +130,31 @@
         @yield('contenido')
     </div>
 
-    <footer aria-label="Pie de página" style="background: #004b6b; color: white; padding: 30px 20px 15px; margin-top: 40px;">
-        <div style="max-width: 1000px; margin: 0 auto; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 20px;">
+    <footer aria-label="Pie de página"
+        style="background: #004b6b; color: white; padding: 30px 20px 15px; margin-top: 40px;">
+        <div
+            style="max-width: 1000px; margin: 0 auto; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 20px;">
             <div>
-                <h4 style="margin: 0 0 8px; font-size: 1.1em;">AquaSense</h4>
-                <p style="margin: 0; font-size: 0.85em; opacity: 0.8;">Monitoreo inteligente de humedad</p>
+                <h4 style="margin: 0 0 8px; font-size: 1.1em;">MigraSense</h4>
+                <p style="margin: 0; font-size: 0.85em; opacity: 0.8;">Seguimiento inteligente de migraña</p>
             </div>
             <div>
                 <h4 style="margin: 0 0 8px; font-size: 1.1em;">Enlaces</h4>
                 <p style="margin: 0; font-size: 0.85em; opacity: 0.8;">
                     <a href="{{ route('landingPage') }}" style="color: white; text-decoration: none;">Inicio</a> ·
-                    <a href="{{ route('usuarios.createUsuario') }}" style="color: white; text-decoration: none;">Registro</a>
+                    <a href="{{ route('usuarios.createUsuario') }}"
+                        style="color: white; text-decoration: none;">Registro</a>
                 </p>
             </div>
             <div>
                 <h4 style="margin: 0 0 8px; font-size: 1.1em;">Contacto</h4>
-                <p style="margin: 0; font-size: 0.85em; opacity: 0.8;">info@aquasense.com</p>
+                <p style="margin: 0; font-size: 0.85em; opacity: 0.8;">info@migrasense.com</p>
             </div>
         </div>
         <hr style="border: none; border-top: 1px solid rgba(255,255,255,0.2); margin: 20px 0 10px;">
-        <p style="text-align: center; margin: 0; font-size: 0.8em; opacity: 0.6;">Copyright &copy; 2026 AquaSense. Todos los derechos reservados.</p>
+        <p style="text-align: center; margin: 0; font-size: 0.8em; opacity: 0.6;">Copyright &copy; 2026 MigraSense.
+            Todos los derechos reservados.</p>
     </footer>
 </body>
+
 </html>

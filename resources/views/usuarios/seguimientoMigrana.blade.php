@@ -56,7 +56,7 @@
     }
     .followup-panel h2 { margin: 0 0 5px; font-size: 1.15rem; }
     .followup-panel > p { margin: 0 0 18px; color: var(--muted); font-size: .9rem; }
-    .followup-chart { height: 270px; }
+    .followup-chart { height: 300px; }
     .migraine-days {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(285px, 1fr));
@@ -95,6 +95,8 @@
     .migraine-delete-button:hover { background: #b42318; color: #fff; }
     .migraine-meta { display: flex; flex-wrap: wrap; gap: 7px; margin: 8px 0; }
     .migraine-tag { padding: 4px 8px; border-radius: 999px; background: var(--soft); color: var(--ink); font-size: .78rem; }
+    .migraine-tag-stars { color: #f2c94c; letter-spacing: 2px; font-size: 0.9rem; }
+    .migraine-range-note { margin: 4px 0 0; color: var(--muted); font-size: .8rem; font-style: italic; }
     .migraine-notes { margin: 7px 0 0; color: var(--muted); font-size: .88rem; }
     .migraine-more-info {
         margin-top: 14px;
@@ -109,12 +111,21 @@
     .migraine-more-info summary::marker { color: var(--accent); }
     .migraine-more-info[open] summary { margin-bottom: 10px; }
     .empty-followup { padding: 30px; border: 1px dashed #b9cdd4; border-radius: 10px; color: var(--muted); text-align: center; }
+    .followup-success {
+        margin: 0 0 20px;
+        padding: 14px 16px;
+        border-radius: 8px;
+        background: #f3fbf4;
+        border: 1px solid #bfe3c5;
+        color: #1e6b34;
+        font-weight: 600;
+    }
     @media (max-width: 700px) {
         .migraine-followup { padding: 28px 16px 40px; }
         .followup-header { display: block; }
         .followup-button { margin-top: 18px; }
         .followup-panel { padding: 16px; }
-        .followup-chart { height: 230px; }
+        .followup-chart { height: 260px; }
         .migraine-days { grid-template-columns: 1fr; }
         .migraine-card { padding: 16px; }
         .migraine-episode-header { align-items: flex-start; }
@@ -127,32 +138,73 @@
         const resumen = JSON.parse(document.getElementById('resumen-migranas').textContent);
         const canvas = document.getElementById('migraineChart');
 
-        if (!canvas || !resumen.length) return;
-
-        new Chart(canvas, {
-            type: 'bar',
-            data: {
-                labels: resumen.map((dia) => new Intl.DateTimeFormat('es-ES', {
-                    day: 'numeric',
-                    month: 'short'
-                }).format(new Date(`${dia.fecha}T12:00:00`))),
-                datasets: [{
-                    label: 'Episodios',
-                    data: resumen.map((dia) => dia.cantidad),
-                    backgroundColor: '#006994',
-                    borderRadius: 6,
-                    maxBarThickness: 42
-                }]
-            },
-            options: {
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: {
-                    y: { beginAtZero: true, ticks: { precision: 0 }, title: { display: true, text: 'Episodios' } },
-                    x: { grid: { display: false } }
+        if (canvas && resumen.length) {
+            new Chart(canvas, {
+                type: 'bar',
+                data: {
+                    labels: resumen.map((dia) => new Intl.DateTimeFormat('es-ES', {
+                        day: 'numeric',
+                        month: 'short'
+                    }).format(new Date(`${dia.fecha}T12:00:00`))),
+                    datasets: [
+                        {
+                            label: 'Leve',
+                            data: resumen.map((dia) => dia.leve),
+                            backgroundColor: '#2f80ed',
+                            borderRadius: 4,
+                            maxBarThickness: 42
+                        },
+                        {
+                            label: 'Moderada',
+                            data: resumen.map((dia) => dia.moderada),
+                            backgroundColor: '#f2c94c',
+                            borderRadius: 4,
+                            maxBarThickness: 42
+                        },
+                        {
+                            label: 'Fuerte',
+                            data: resumen.map((dia) => dia.fuerte),
+                            backgroundColor: '#f2994a',
+                            borderRadius: 4,
+                            maxBarThickness: 42
+                        }
+                    ]
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: true, position: 'top' } },
+                    scales: {
+                        x: { stacked: true, grid: { display: false } },
+                        y: { stacked: true, beginAtZero: true, ticks: { precision: 0 }, title: { display: true, text: 'Episodios' } }
+                    }
                 }
-            }
-        });
+            });
+        }
+
+        const params = new URLSearchParams(window.location.search);
+
+if (params.get('registrado') === '1') {
+    const stack = document.querySelector('.notification-stack');
+
+    if (stack) {
+        const item = document.createElement('div');
+        item.className = 'notification-item';
+        item.innerHTML = `
+            <div class="notification notification-success" role="status" aria-live="polite">
+                <div class="notification-mark" aria-hidden="true">✓</div>
+                <div class="notification-content">
+                    <strong>Éxito</strong>
+                    <span>Migraña registrada correctamente.</span>
+                </div>
+            </div>
+        `;
+        stack.appendChild(item);
+    }
+
+    params.delete('registrado');
+    const nuevaUrl = window.location.pathname + (params.toString() ? '?' + params.toString() : '');
+    window.history.replaceState({}, '', nuevaUrl);
+}
     });
 </script>
 @endsection
@@ -168,8 +220,8 @@
     </header>
 
     <section class="followup-panel" aria-label="Gráfica de episodios">
-        <h2>Frecuencia de episodios</h2>
-        <p>Cada barra representa cuántas migrañas registraste en un día.</p>
+        <h2>Frecuencia de episodios por intensidad</h2>
+        <p>Cada barra se divide por intensidad: leve (azul), moderada (amarillo) y fuerte (naranja). Una migraña de varios días cuenta en cada uno de ellos.</p>
         @if ($resumenDias->isNotEmpty())
             <div class="followup-chart"><canvas id="migraineChart"></canvas></div>
         @else
@@ -180,7 +232,7 @@
     <section aria-label="Historial de migrañas">
         <div class="followup-panel">
             <h2>Historial por días</h2>
-            <p>Tus registros aparecen ordenados cronológicamente.</p>
+            <p>Tus registros aparecen ordenados cronológicamente, agrupados por el día en que comenzaron.</p>
 
             @if ($diasMigrana->isNotEmpty())
                 <div class="migraine-days">
@@ -190,6 +242,13 @@
                             <p class="migraine-card-count">{{ $episodios->count() }} {{ $episodios->count() === 1 ? 'episodio registrado' : 'episodios registrados' }}</p>
 
                             @foreach ($episodios as $episodio)
+                                @php
+                                    $fechaInicioEpisodio = \Carbon\Carbon::parse($episodio->hora_inicio)->toDateString();
+                                    $fechaFinEpisodio = $episodio->hora_termina
+                                        ? \Carbon\Carbon::parse($episodio->hora_termina)->toDateString()
+                                        : $fechaInicioEpisodio;
+                                    $esMultidia = $fechaFinEpisodio !== $fechaInicioEpisodio;
+                                @endphp
                                 <div class="migraine-episode">
                                     <div class="migraine-episode-header">
                                         <strong>{{ \Carbon\Carbon::parse($episodio->hora_inicio)->format('H:i') }} - {{ $episodio->hora_termina ? \Carbon\Carbon::parse($episodio->hora_termina)->format('H:i') : 'Sin hora de fin' }}</strong>
@@ -199,9 +258,12 @@
                                             <button class="migraine-delete-button" type="submit">Eliminar</button>
                                         </form>
                                     </div>
+                                    @if ($esMultidia)
+                                        <p class="migraine-range-note">{{ ucfirst(\Carbon\Carbon::parse($fechaInicioEpisodio)->locale('es')->translatedFormat('l, j \d\e F \d\e Y')) }} - {{ ucfirst(\Carbon\Carbon::parse($fechaFinEpisodio)->locale('es')->translatedFormat('l, j \d\e F \d\e Y')) }}</p>
+                                    @endif
                                     <div class="migraine-meta">
-                                        <span class="migraine-tag">{{ ucfirst($episodio->tipo_migrana) }}</span>
-                                        <span class="migraine-tag">Intensidad: {{ ucfirst($episodio->intensidad) }}</span>
+                                        <span class="migraine-tag">{{ \App\Support\MigranaVisual::icono($episodio->tipo_migrana) }} {{ \App\Support\MigranaVisual::etiquetaTipo($episodio->tipo_migrana) }}</span>
+                                        <span class="migraine-tag migraine-tag-stars" title="Intensidad: {{ ucfirst($episodio->intensidad) }}">{{ \App\Support\MigranaVisual::estrellas($episodio->intensidad) }}</span>
                                     </div>
                                 </div>
                             @endforeach

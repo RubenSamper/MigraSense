@@ -8,7 +8,6 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
-use App\Models\Recordatorio;
 
 class UsuariosController extends Controller
 {
@@ -39,7 +38,7 @@ class UsuariosController extends Controller
                         $where .= ' OR ';
                     }
 
-                    $where .= $request->columns[$i]['name'] . ' LIKE \'%' . $request->search['value'] . '%\'';
+                    $where .= 'u.' . $request->columns[$i]['name'] . ' LIKE \'%' . $request->search['value'] . '%\'';
                     $stringAdded = true;
                 }
             }
@@ -196,16 +195,50 @@ class UsuariosController extends Controller
 
     public function dashboard()
     {
-        $recordatorios = Recordatorio::query()
-            ->where('usuario_id', Auth::id())
-            ->where('completado', false)
-            ->where('fecha_recordatorio', '>=', now()->startOfDay())
-            ->orderBy('fecha_recordatorio')
-            ->get();
+        $usuario = Auth::user();
+        $aemet = new \App\Services\AemetService();
 
-        return view('usuarios.dashboard', compact('recordatorios'));
+        $datosClima = null;
+        $riesgo = ['nivel' => 'desconocido', 'variacion_hpa' => null];
+        $observaciones = [];
+
+        if ($usuario->latitud && $usuario->longitud) {
+            $estacion = $aemet->estacionConDatosMasCercana((float) $usuario->latitud, (float) $usuario->longitud);
+            if ($estacion) {
+                $observaciones = $aemet->obtenerObservacionEstacion($estacion['idema']);
+                if (!empty($observaciones)) {
+                    $riesgo = $aemet->calcularRiesgoMigrana($observaciones, $usuario->sensibilidad_presion);
+
+                    \App\Models\HistorialRiesgo::updateOrCreate(
+                        [
+                            'usuario_id' => $usuario->id,
+                            'fecha' => now()->toDateString(),
+                        ],
+                        [
+                            'id' => (string) \Illuminate\Support\Str::uuid(),
+                            'nivel' => $riesgo['nivel'],
+                            'variacion_hpa' => $riesgo['variacion_hpa'],
+                        ]
+                    );
+
+                    $ultimaObservacion = end($observaciones);
+
+                    $datosClima = [
+                        'estacion_nombre' => $estacion['ubi'] ?? $estacion['nombre'] ?? 'Desconocida',
+                        'temperatura_actual' => $ultimaObservacion['ta'] ?? null,
+                        'presion_actual' => $ultimaObservacion['pres_nmar'] ?? null,
+                        'observaciones' => array_map(fn($obs) => [
+                            'hora' => substr($obs['fint'] ?? '', 11, 5),
+                            'temperatura' => $obs['ta'] ?? null,
+                            'presion' => $obs['pres_nmar'] ?? null,
+                        ], $observaciones),
+                    ];
+                }
+            }
+        }
+
+        return view('usuarios.dashboard', compact('riesgo', 'datosClima'));
     }
-
     public function login()
     {
         return view('usuarios.login');
@@ -220,7 +253,7 @@ class UsuariosController extends Controller
 
         if (Auth::attempt(['correo' => $request->correo, 'password' => $request->password])) {
             $usuario = Auth::user();
-            if (in_array((int) $usuario->rol_id, [1, 3])) {
+            if ((int) $usuario->rol_id === 1) {
                 return redirect()
                     ->route('usuarios.obtenerListadoUsuarios')
                     ->with('success', 'Sesión iniciada correctamente.');
@@ -257,13 +290,9 @@ class UsuariosController extends Controller
             'nombre' => ['required', 'regex:/^[\pL\s]+$/u', 'max:255'],
             'apellidos' => ['required', 'regex:/^[\pL\s]+$/u', 'max:255'],
             'correo' => ['required', 'email', 'unique:usuarios,correo,' . $id . ',id'],
-            'rol_id' => ['required', 'exists:roles,id', 'not_in:3'],
+            'rol_id' => ['required', 'exists:roles,id'],
             'password' => ['nullable', 'min:8'],
         ]);
-
-        if ((int) Auth::user()->rol_id !== 3 && (int) $request->rol_id !== 2) {
-            abort(403, 'Solo el superusuario puede asignar roles administrativos.');
-        }
 
         $usuario->nombre = $request->nombre;
         $usuario->apellidos = $request->apellidos;
@@ -279,22 +308,48 @@ class UsuariosController extends Controller
         return redirect()->route('usuarios.obtenerListadoUsuarios')->with('success', 'Usuario actualizado correctamente.');
     }
 
-    public function guardarZona(Request $request)
+    public function configuracion()
+    {
+        $usuario = Auth::user();
+        return view('usuarios.configuracion', compact('usuario'));
+    }
+
+    public function guardarConfiguracion(Request $request)
     {
         $request->validate([
             'latitud' => 'required|numeric|between:-90,90',
             'longitud' => 'required|numeric|between:-180,180',
+            'sensibilidad_presion' => 'required|in:poco_sensible,sensible,muy_sensible',
         ]);
 
-        $usuario = Usuario::findOrFail(Auth::id()); // Obtener el usuario autenticado
+        $usuario = Usuario::findOrFail(Auth::id());
         $usuario->latitud = $request->latitud;
         $usuario->longitud = $request->longitud;
+        $usuario->sensibilidad_presion = $request->sensibilidad_presion;
         $usuario->save();
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Zona guardada correctamente.',
-        ]);
+        return redirect()
+            ->route('usuarios.configuracion')
+            ->with('success', 'Configuración guardada correctamente.');
+    }
+
+    public function estacionesAemetDisponibles()
+    {
+        $aemet = new \App\Services\AemetService();
+        $observaciones = $aemet->obtenerTodasLasObservacionesActuales();
+
+        $estaciones = collect($observaciones)
+            ->filter(fn($obs) => isset($obs['lat'], $obs['lon'], $obs['ubi']))
+            ->map(fn($obs) => [
+                'nombre' => $obs['ubi'],
+                'lat' => (float) $obs['lat'],
+                'lon' => (float) $obs['lon'],
+            ])
+            ->unique('nombre')
+            ->sortBy('nombre')
+            ->values();
+
+        return response()->json($estaciones);
     }
 
     public function logout()
@@ -313,11 +368,7 @@ class UsuariosController extends Controller
             return false;
         }
 
-        if ($rolActual === 3) {
-            return $rolObjetivo !== 3;
-        }
-
-        return $rolActual === 1 && $rolObjetivo === 2;
+        return $rolActual === 1;
     }
 
     public function validarPasswordUsuario(Request $request)

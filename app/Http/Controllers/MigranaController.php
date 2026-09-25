@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 use Carbon\Carbon;
+use Carbon\CarbonPeriod;
 use App\Models\TipoMigrana;
 
 class MigranaController extends Controller
@@ -23,12 +24,30 @@ class MigranaController extends Controller
             ->get();
 
         $diasMigrana = $migranas
-            ->groupBy(fn ($migrana) => Carbon::parse($migrana->hora_inicio)->format('Y-m-d'))
+            ->groupBy(fn($migrana) => Carbon::parse($migrana->hora_inicio)->format('Y-m-d'))
             ->sortKeys();
 
-        $resumenDias = $diasMigrana->map(fn ($episodios, $fecha) => [
+        $conteoResumen = [];
+
+        foreach ($migranas as $migrana) {
+            $inicio = Carbon::parse($migrana->hora_inicio)->startOfDay();
+            $fin = $migrana->hora_termina
+                ? Carbon::parse($migrana->hora_termina)->startOfDay()
+                : $inicio;
+
+            foreach (CarbonPeriod::create($inicio, $fin) as $dia) {
+                $clave = $dia->format('Y-m-d');
+                $conteoResumen[$clave][$migrana->intensidad] = ($conteoResumen[$clave][$migrana->intensidad] ?? 0) + 1;
+            }
+        }
+
+        ksort($conteoResumen);
+
+        $resumenDias = collect($conteoResumen)->map(fn($niveles, $fecha) => [
             'fecha' => $fecha,
-            'cantidad' => $episodios->count(),
+            'leve' => $niveles['leve'] ?? 0,
+            'moderada' => $niveles['moderada'] ?? 0,
+            'fuerte' => $niveles['fuerte'] ?? 0,
         ])->values();
 
         return view('usuarios.seguimientoMigrana', compact('diasMigrana', 'resumenDias'));
@@ -42,6 +61,12 @@ class MigranaController extends Controller
             'hora_inicio' => ['required', 'date'],
             'hora_termina' => ['required', 'date', 'after_or_equal:hora_inicio'],
             'notas' => ['nullable', 'string', 'max:250'],
+        ], [
+            'tipo_migrana.required' => 'Selecciona un tipo de migraña.',
+            'intensidad.required' => 'Selecciona la intensidad.',
+            'hora_inicio.required' => 'Indica la hora de inicio.',
+            'hora_termina.required' => 'Indica la hora de fin.',
+            'hora_termina.after_or_equal' => 'La hora de fin debe ser igual o posterior a la de inicio.',
         ]);
 
         TipoMigrana::create([

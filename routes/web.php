@@ -3,7 +3,6 @@
 use App\Http\Controllers\UsuariosController;
 use App\Http\Controllers\GoogleController;
 use App\Http\Controllers\MigranaController;
-use App\Http\Controllers\AlertasController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [UsuariosController::class, 'landingPage'])->name('landingPage');
@@ -27,12 +26,18 @@ Route::post('/usuarios/validarPasswordUsuario', [UsuariosController::class, 'val
 Route::get('/usuarios/dashboard', [UsuariosController::class, 'dashboard']) // esta ruta es para mostrar el mapa y la ubicación del usuario
 	->middleware('auth')
 	->name('usuarios.dashboard');
-Route::post('/usuarios/guardarZona', [UsuariosController::class, 'guardarZona'])
+
+Route::get('/usuarios/configuracion', [UsuariosController::class, 'configuracion'])
 	->middleware('auth')
-	->name('usuarios.guardarZona');
-Route::post('/usuarios/guardarAlertasClima', [AlertasController::class, 'guardarAlertasClima'])
+	->name('usuarios.configuracion');
+
+Route::get('/usuarios/estacionesAemetDisponibles', [UsuariosController::class, 'estacionesAemetDisponibles'])
 	->middleware('auth')
-	->name('usuarios.guardarAlertasClima');
+	->name('usuarios.estacionesAemetDisponibles');
+
+Route::post('/usuarios/guardarConfiguracion', [UsuariosController::class, 'guardarConfiguracion'])
+	->middleware('auth')
+	->name('usuarios.guardarConfiguracion');
 
 Route::get('/usuarios/registrarMigrana', [MigranaController::class, 'registrarMigrana'])
 	->middleware('auth')

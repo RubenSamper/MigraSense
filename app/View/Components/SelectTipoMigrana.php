@@ -10,6 +10,8 @@ class SelectTipoMigrana extends Component
     public $listado;
     public $seleccionado;
 
+    public $iconos = \App\Support\MigranaVisual::ICONOS;
+
     public function __construct($seleccionado = null)
     {
         $this->seleccionado = $seleccionado;
@@ -24,13 +26,8 @@ class SelectTipoMigrana extends Component
             : [];
     }
 
-    /**
-     * Render the component.
-     */
-
     public function render()
     {
         return view('components.select-tipo-migrana');
     }
-
 }
