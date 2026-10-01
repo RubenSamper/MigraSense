@@ -40,38 +40,31 @@ class GoogleController extends Controller
             $existeUsuario = Usuario::where('google_id', $usuarioGoogle->id)->first();
 
             if ($existeUsuario) {
+                Auth::login($existeUsuario);
+
                 if ($mode === 'register') {
-                    return redirect()
-                        ->route('usuarios.createUsuario')
-                        ->with('error', 'Ya existe una cuenta asociada a esta cuenta de Google.');
+                    return $this->redirectByRole('Ya tenías una cuenta asociada a esta cuenta de Google: hemos iniciado sesión directamente.');
                 }
 
-                Auth::login($existeUsuario);
                 return $this->redirectByRole();
             }
 
             // si ya existe un usuario con el mismo correo, asociar google_id y loguear
             $usuarioPorCorreo = Usuario::where('correo', $usuarioGoogle->email)->first();
             if ($usuarioPorCorreo) {
-                if ($mode === 'register') {
-                    return redirect()
-                        ->route('usuarios.createUsuario')
-                        ->with('error', 'Ya existe una cuenta con este correo electrónico. Inicia sesión.');
-                }
-
                 $usuarioPorCorreo->google_id = $usuarioGoogle->id;
                 $usuarioPorCorreo->save();
                 Auth::login($usuarioPorCorreo);
+
+                if ($mode === 'register') {
+                    return $this->redirectByRole('Ya tenías una cuenta con este correo electrónico: hemos iniciado sesión directamente.');
+                }
+
                 return $this->redirectByRole();
             }
 
-            if ($mode !== 'register') {
-                return redirect()
-                    ->route('usuarios.login')
-                    ->with('error', 'No existe una cuenta con este correo. Regístrate primero.');
-            }
-
-            // crear nuevo usuario
+            // no existe ninguna cuenta con este Google ni con este correo:
+            // se crea una cuenta nueva automáticamente, tanto si venía de "login" como de "register"
             $datos = [];
             $datos['id'] = (string) Str::uuid();
             $datos['correo'] = $usuarioGoogle->email;
@@ -103,27 +96,27 @@ class GoogleController extends Controller
             }
 
             Auth::login($nuevoUsuario);
-            return $this->redirectByRole();
+            return $this->redirectByRole('No tenías una cuenta registrada con este correo: te hemos creado una nueva automáticamente con tu cuenta de Google.');
 
 
         } catch (Exception $e) {
             Log::error('Error en login con Google: ' . $e->getMessage());
             return redirect()
                 ->route('usuarios.login')
-                ->with('error', 'No se pudo iniciar sesión con Google: ' . $e->getMessage());
+                ->with('error', 'No se pudo iniciar sesión con Google.');
         }
 
     }
 
-    protected function redirectByRole()
+    protected function redirectByRole(string $mensaje = 'Sesión iniciada con Google correctamente.')
     {
         if (Auth::user() && (int) Auth::user()->rol_id === 1) {
             return redirect()
                 ->route('usuarios.obtenerListadoUsuarios')
-                ->with('success', 'Sesión iniciada con Google correctamente.');
+                ->with('success', $mensaje);
         }
         return redirect()
             ->route('usuarios.dashboard')
-            ->with('success', 'Sesión iniciada con Google correctamente.');
+            ->with('success', $mensaje);
     }
 }
