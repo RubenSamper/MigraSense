@@ -5,18 +5,24 @@
 <script id="resumen-migranas" type="application/json">@json($resumenDias)</script>
 <style>
     .migraine-followup {
-        --ink: #173042;
-        --muted: #647783;
-        --line: #dce7eb;
-        --surface: #ffffff;
-        --soft: #f4f8f9;
-        --accent: #006994;
-        --warm: #d85d48;
-        max-width: 1120px;
-        margin: 0 auto;
-        padding: 42px 24px 56px;
-        color: var(--ink);
-    }
+    --ink: #173042;
+    --muted: #647783;
+    --line: #dce7eb;
+    --surface: #ffffff;
+    --soft: #f4f8f9;
+    --accent: #006994;
+    --warm: #d85d48;
+    max-width: 1120px;
+    margin: 0 auto;
+    padding: 42px 24px 56px;
+    color: var(--ink);
+    background-color: #f7fafb;
+    background-image:
+        linear-gradient(180deg, #eef6f8 0%, #f7fafb 260px, #f7fafb 100%),
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='40' viewBox='0 0 120 40'%3E%3Cpath d='M0 20 Q 30 0, 60 20 T 120 20' fill='none' stroke='%23006994' stroke-opacity='0.06' stroke-width='2'/%3E%3C/svg%3E");
+    background-repeat: no-repeat, repeat;
+    background-size: 100% 400px, 120px 40px;
+}
     .followup-header {
         display: flex;
         justify-content: space-between;

@@ -21,12 +21,16 @@
 
         html {
             overflow-x: hidden;
+            height: 100%;
         }
 
         body {
             margin: 0;
             min-width: 320px;
+            min-height: 100%;
             overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
         }
 
         img,
@@ -71,6 +75,10 @@
             transform: translateY(0);
         }
 
+        .page-content {
+            flex: 1 0 auto;
+        }
+
         .page-content:focus {
             outline: none;
         }
@@ -78,6 +86,10 @@
         .page-shell {
             width: min(1120px, calc(100% - 32px));
             margin: 0 auto;
+        }
+
+        footer {
+            flex-shrink: 0;
         }
 
         @media (max-width: 600px) {
