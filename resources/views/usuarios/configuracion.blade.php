@@ -240,32 +240,7 @@
             }
 
             lista.addClass('is-open');
-        } const texto = $('#buscadorEstacion').val().trim().toLowerCase();
-        const lista = $('#listaEstaciones');
-
-        if (texto.length < 2) {
-            lista.removeClass('is-open').empty();
-            return;
         }
-
-        const coincidencias = estacionesDisponibles
-            .filter((estacion) => estacion.nombre.toLowerCase().includes(texto))
-            .slice(0, 20);
-
-        lista.empty();
-
-        if (coincidencias.length === 0) {
-            lista.append('<div class="config-station-empty">No se encontraron estaciones con ese nombre.</div>');
-        } else {
-            coincidencias.forEach((estacion) => {
-                const opcion = $('<div class="config-station-option"></div>').text(estacion.nombre);
-                opcion.on('click', () => seleccionarEstacion(estacion));
-                lista.append(opcion);
-            });
-        }
-
-        lista.addClass('is-open');
-            }
 
         function seleccionarEstacion(estacion) {
             estacionSeleccionada = estacion;
