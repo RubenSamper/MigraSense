@@ -8,34 +8,125 @@ use Illuminate\Support\Str;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
 use App\Models\TipoMigrana;
+use App\Support\MigranaVisual;
 
 class MigranaController extends Controller
 {
-    public function registrarMigrana()
+    public function registrarMigrana(Request $request)
     {
-        return view('usuarios.registrarMigrana');
+        // Si venimos del botón "+ Registrar nueva migraña" estando en un mes
+        // pasado dentro de Seguimiento, sugerimos el día 1 de ese mes en vez
+        // de la fecha de hoy. Si seguimos en el mes actual, no cambia nada.
+        $mesSolicitado = $request->query('mes');
+        $fechaSugerida = now();
+        $finSugerido = null;
+
+        if ($mesSolicitado && preg_match('/^\d{4}-\d{2}$/', $mesSolicitado)) {
+            try {
+                $mesElegido = Carbon::createFromFormat('Y-m-d', $mesSolicitado . '-01');
+
+                if ($mesElegido->format('Y-m') !== now()->format('Y-m')) {
+                    $fechaSugerida = $mesElegido->setTime(now()->hour, now()->minute);
+                    // La hora de fin se sugiere igual a la de inicio (mismo día del
+                    // mes pasado) para que el selector de fecha se abra ya en ese mes;
+                    // el usuario solo tiene que ajustar la hora exacta.
+                    $finSugerido = $fechaSugerida->copy();
+                }
+            } catch (\Exception $e) {
+                // Si el mes no es válido, nos quedamos con la fecha de hoy.
+            }
+        }
+
+        return view('usuarios.registrarMigrana', compact('fechaSugerida', 'finSugerido'));
     }
 
-    public function seguimientoMigrana()
+    public function seguimientoMigrana(Request $request)
     {
-        $migranas = TipoMigrana::query()
+        $todasLasMigranas = TipoMigrana::query()
             ->where('usuario_id', Auth::id())
             ->orderBy('hora_inicio')
             ->get();
 
-        $diasMigrana = $migranas
-            ->groupBy(fn($migrana) => Carbon::parse($migrana->hora_inicio)->format('Y-m-d'))
+        // Meses en los que el usuario tiene al menos un episodio registrado
+        // (agrupamos por el mes en el que empezó cada episodio).
+        $mesesConRegistros = $todasLasMigranas
+            ->map(fn ($migrana) => Carbon::parse($migrana->hora_inicio)->format('Y-m'))
+            ->unique()
+            ->sortDesc()
+            ->values();
+
+        $mesActual = Carbon::now()->format('Y-m');
+        $mesSolicitado = $request->query('mes');
+        $mesSeleccionado = $mesActual;
+
+        if ($mesSolicitado && preg_match('/^\d{4}-\d{2}$/', $mesSolicitado)) {
+            try {
+                $mesSeleccionado = Carbon::createFromFormat('Y-m-d', $mesSolicitado . '-01')->format('Y-m');
+            } catch (\Exception $e) {
+                $mesSeleccionado = $mesActual;
+            }
+
+            // Bloqueamos los meses futuros también aquí, no solo ocultando el
+            // botón en la vista: alguien podría escribir ?mes=2026-12 a mano.
+            if ($mesSeleccionado > $mesActual) {
+                $mesSeleccionado = $mesActual;
+            }
+        } elseif ($mesesConRegistros->isNotEmpty()) {
+            // Sin un mes concreto en la URL, abrimos directamente en el mes
+            // más reciente que tenga registros.
+            $mesSeleccionado = $mesesConRegistros->first();
+        }
+
+        // No limitamos lo lejos que se puede retroceder (para poder ir pasando a
+        // limpio episodios antiguos poco a poco), pero nunca se puede avanzar
+        // más allá del mes actual.
+        $cursorMes = Carbon::createFromFormat('Y-m-d', $mesSeleccionado . '-01');
+        $mesAnterior = $cursorMes->copy()->subMonthNoOverflow()->format('Y-m');
+        $mesSiguiente = $mesSeleccionado < $mesActual
+            ? $cursorMes->copy()->addMonthNoOverflow()->format('Y-m')
+            : null;
+
+        $etiquetaMesSeleccionado = ucfirst(Carbon::createFromFormat('Y-m-d', $mesSeleccionado . '-01')->locale('es')->translatedFormat('F \d\e Y'));
+        $etiquetaMesAnterior = ucfirst(Carbon::createFromFormat('Y-m-d', $mesAnterior . '-01')->locale('es')->translatedFormat('F \d\e Y'));
+        $etiquetaMesSiguiente = $mesSiguiente
+            ? ucfirst(Carbon::createFromFormat('Y-m-d', $mesSiguiente . '-01')->locale('es')->translatedFormat('F \d\e Y'))
+            : null;
+
+        // El desplegable de acceso rápido solo lista meses con registros reales
+        // (más el mes que se está viendo y el mes actual, aunque estén vacíos).
+        $mesesParaSelector = collect([$mesSeleccionado, $mesActual])
+            ->merge($mesesConRegistros)
+            ->unique()
+            ->sortDesc()
+            ->values()
+            ->map(fn ($mes) => [
+                'valor' => $mes,
+                'etiqueta' => ucfirst(Carbon::createFromFormat('Y-m-d', $mes . '-01')->locale('es')->translatedFormat('F Y')),
+            ]);
+
+        $migranasDelMes = $todasLasMigranas
+            ->filter(fn ($migrana) => Carbon::parse($migrana->hora_inicio)->format('Y-m') === $mesSeleccionado)
+            ->values();
+
+        $diasMigrana = $migranasDelMes
+            ->groupBy(fn ($migrana) => Carbon::parse($migrana->hora_inicio)->format('Y-m-d'))
             ->sortKeys();
 
         $conteoResumen = [];
 
-        foreach ($migranas as $migrana) {
+        foreach ($migranasDelMes as $migrana) {
             $inicio = Carbon::parse($migrana->hora_inicio)->startOfDay();
             $fin = $migrana->hora_termina
                 ? Carbon::parse($migrana->hora_termina)->startOfDay()
                 : $inicio;
 
             foreach (CarbonPeriod::create($inicio, $fin) as $dia) {
+                // Si el episodio se alarga a otro mes, solo contamos los días
+                // que caen dentro del mes que se está mostrando.
+                if ($dia->format('Y-m') !== $mesSeleccionado) {
+                    continue;
+                }
+
                 $clave = $dia->format('Y-m-d');
                 $conteoResumen[$clave][$migrana->intensidad] = ($conteoResumen[$clave][$migrana->intensidad] ?? 0) + 1;
             }
@@ -43,14 +134,38 @@ class MigranaController extends Controller
 
         ksort($conteoResumen);
 
-        $resumenDias = collect($conteoResumen)->map(fn($niveles, $fecha) => [
+        $resumenDias = collect($conteoResumen)->map(fn ($niveles, $fecha) => [
             'fecha' => $fecha,
             'leve' => $niveles['leve'] ?? 0,
             'moderada' => $niveles['moderada'] ?? 0,
             'fuerte' => $niveles['fuerte'] ?? 0,
         ])->values();
 
-        return view('usuarios.seguimientoMigrana', compact('diasMigrana', 'resumenDias'));
+        // Segunda vista de la gráfica: episodios del mes agrupados por tipo de migraña.
+        $resumenPorTipo = $migranasDelMes
+            ->groupBy('tipo_migrana')
+            ->map(fn ($grupo, $tipo) => [
+                'tipo' => $tipo,
+                'etiqueta' => MigranaVisual::etiquetaTipo($tipo),
+                'total' => $grupo->count(),
+            ])
+            ->sortByDesc('total')
+            ->values();
+
+        return view('usuarios.seguimientoMigrana', compact(
+            'diasMigrana',
+            'resumenDias',
+            'resumenPorTipo',
+            'mesSeleccionado',
+            'mesAnterior',
+            'mesSiguiente',
+            'etiquetaMesSeleccionado',
+            'etiquetaMesAnterior',
+            'etiquetaMesSiguiente',
+            'mesesParaSelector',
+            'mesesConRegistros',
+            'todasLasMigranas'
+        ));
     }
 
     public function guardarMigrana(Request $request)

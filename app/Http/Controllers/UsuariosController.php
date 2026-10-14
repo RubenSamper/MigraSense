@@ -190,7 +190,11 @@ class UsuariosController extends Controller
             'rol_id' => 2
         ]);
 
-        return redirect()->route('usuarios.createUsuario')->with('success', 'Usuario creado correctamente.');
+        // Cuenta creada: mandamos al usuario a la pantalla de login (no se
+        // inicia sesión automáticamente) con un aviso de que ya puede entrar.
+        return redirect()
+            ->route('usuarios.login')
+            ->with('success', 'Usuario creado correctamente. Ya puedes iniciar sesión.');
     }
 
     public function dashboard()

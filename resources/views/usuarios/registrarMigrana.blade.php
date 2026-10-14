@@ -90,16 +90,6 @@
             background: #004f70;
         }
 
-        .migraine-success {
-            margin: 0 0 16px;
-            padding: 14px 16px;
-            border-radius: 8px;
-            background: #f3fbf4;
-            border: 1px solid #bfe3c5;
-            color: #1e6b34;
-            font-weight: 600;
-        }
-
         .field-error {
             margin: 8px 0 0;
             color: #b42318;
@@ -121,14 +111,14 @@
             const form = document.querySelector('form');
 
             const actualizarLimites = () => {
+                // Solo limitamos el campo "fin" (no puede ser anterior al inicio).
+                // El campo "inicio" se deja siempre libre: si el usuario elige un
+                // inicio posterior al fin ya puesto, el aviso de abajo se lo indica,
+                // en vez de bloquearle la fecha con un máximo.
                 if (inicio.value) {
                     fin.min = inicio.value;
-                }
-
-                if (fin.value) {
-                    inicio.max = fin.value;
                 } else {
-                    inicio.removeAttribute('max');
+                    fin.removeAttribute('min');
                 }
 
                 if (inicio.value && fin.value && fin.value < inicio.value) {
@@ -155,7 +145,6 @@
                 evento.preventDefault();
 
                 limpiarErroresCampos();
-                $('#mensajeExito').hide();
 
                 let hayErrores = false;
 
@@ -208,8 +197,6 @@
     <div class="migraine-form-shell">
         <h2>¿Tienes dolor de cabeza?, {{ Auth::user()->nombre }} {{ Auth::user()->apellidos }}</h2>
 
-        <div id="mensajeExito" class="migraine-success" style="display:none;"></div>
-
         <form method="POST" action="{{ route('usuarios.guardarMigrana') }}" novalidate>
             @csrf
 
@@ -227,14 +214,14 @@
                 <div class="date-field">
                     <label for="hora_inicio">Hora de inicio</label>
                     <input type="datetime-local" id="hora_inicio" name="hora_inicio"
-                        value="{{ old('hora_inicio', now()->format('Y-m-d\TH:i')) }}" step="60" required>
+                        value="{{ old('hora_inicio', $fechaSugerida->format('Y-m-d\TH:i')) }}" step="60" required>
                     <small>Selecciona cuándo comenzó el episodio.</small>
                     <p class="field-error" id="error_hora_inicio"></p>
                 </div>
                 <div class="date-field">
                     <label for="hora_termina">Hora de fin</label>
-                    <input type="datetime-local" id="hora_termina" name="hora_termina" value="{{ old('hora_termina') }}"
-                        step="60" required>
+                    <input type="datetime-local" id="hora_termina" name="hora_termina"
+                        value="{{ old('hora_termina', $finSugerido?->format('Y-m-d\TH:i')) }}" step="60" required>
                     <small>Debe ser igual o posterior al inicio.</small>
                     <p class="field-error" id="error_hora_termina"></p>
                 </div>
