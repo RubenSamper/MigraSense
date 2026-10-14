@@ -295,6 +295,42 @@
         }
     </style>
     <script>
+        // Crea un aviso con el mismo aspecto que los del componente
+        // x-notification (mismas clases, mismo CSS, misma animación de 4s),
+        // para usarlo tras acciones por AJAX que no recargan la página y por
+        // tanto no pueden depender de un mensaje flash de sesión.
+        function mostrarNotificacion(tipo, mensaje) {
+            var stack = document.querySelector('.notification-stack');
+            if (!stack) return;
+
+            var estilos = {
+                success: { label: 'Éxito', clase: 'notification-success', marca: '✓', rol: 'status' },
+                error: { label: 'Error', clase: 'notification-error', marca: '!', rol: 'alert' },
+                warning: { label: 'Aviso', clase: 'notification-warning', marca: '!', rol: 'alert' },
+                info: { label: 'Información', clase: 'notification-info', marca: 'i', rol: 'status' },
+            };
+            var estilo = estilos[tipo] || estilos.info;
+
+            var item = document.createElement('div');
+            item.className = 'notification-item';
+            item.innerHTML =
+                '<div class="notification ' + estilo.clase + '" role="' + estilo.rol + '" aria-live="polite">' +
+                    '<div class="notification-mark" aria-hidden="true">' + estilo.marca + '</div>' +
+                    '<div class="notification-content"><strong></strong><span></span></div>' +
+                '</div>';
+
+            item.querySelector('strong').textContent = estilo.label;
+            item.querySelector('span').textContent = mensaje;
+
+            stack.appendChild(item);
+
+            // Misma duración que la animación notification-life del componente,
+            // para quitarlo del DOM una vez que ya es invisible.
+            setTimeout(function () {
+                item.remove();
+            }, 4000);
+        }
+
         $(document).ready(function () {
             var editBaseUrl = "{{ route('usuarios.editarUsuario', ':id') }}";
 
@@ -425,10 +461,11 @@
                         },
                         success: function (response) {
                             table.ajax.reload();
+                            mostrarNotificacion('success', (response && response.message) || 'Usuario eliminado correctamente.');
                         },
                         error: function (response) {
                             console.error("Error", response);
-                            window.alert("Ha ocurrido un problema en el servidor.");
+                            mostrarNotificacion('error', 'Ha ocurrido un problema en el servidor.');
                         }
                     });
                 }

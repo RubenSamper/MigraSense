@@ -92,22 +92,6 @@
             flex-shrink: 0;
         }
 
-        /* En móvil, los avisos (success/error/warning/info) se anclan abajo a
-           la derecha en vez de arriba a la derecha; env(safe-area-inset-bottom)
-           evita que queden pegados a la barra/indicador inferior del móvil. */
-        @media (max-width: 600px) {
-            .notification-stack {
-                top: auto;
-                right: 12px;
-                left: auto;
-                bottom: calc(16px + env(safe-area-inset-bottom));
-            }
-
-            .notification-stack .notification-item {
-                width: auto;
-                max-width: calc(100vw - 24px);
-            }
-        }
     </style>
     @yield('scripts')
 </head>
@@ -134,6 +118,26 @@
 
         .notification-stack .notification-item {
             pointer-events: auto;
+        }
+
+        /* En móvil, los avisos (success/error/warning/info) se anclan abajo a
+           la derecha en vez de arriba a la derecha; env(safe-area-inset-bottom)
+           evita que queden pegados a la barra/indicador inferior del móvil.
+           Esta regla tiene que ir DESPUÉS de ".notification-stack" de arriba
+           (mismo bloque): con la misma prioridad CSS, al tener la misma
+           especificidad, gana la que aparece más tarde en el documento. */
+        @media (max-width: 600px) {
+            .notification-stack {
+                top: auto;
+                right: 12px;
+                left: auto;
+                bottom: calc(16px + env(safe-area-inset-bottom));
+            }
+
+            .notification-stack .notification-item {
+                width: auto;
+                max-width: calc(100vw - 24px);
+            }
         }
     </style>
 
