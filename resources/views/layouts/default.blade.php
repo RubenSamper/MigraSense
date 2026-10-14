@@ -92,14 +92,20 @@
             flex-shrink: 0;
         }
 
+        /* En móvil, los avisos (success/error/warning/info) se anclan abajo a
+           la derecha en vez de arriba a la derecha; env(safe-area-inset-bottom)
+           evita que queden pegados a la barra/indicador inferior del móvil. */
         @media (max-width: 600px) {
             .notification-stack {
+                top: auto;
                 right: 12px;
-                left: 12px;
+                left: auto;
+                bottom: calc(16px + env(safe-area-inset-bottom));
             }
 
             .notification-stack .notification-item {
-                width: 100%;
+                width: auto;
+                max-width: calc(100vw - 24px);
             }
         }
     </style>
@@ -128,13 +134,6 @@
 
         .notification-stack .notification-item {
             pointer-events: auto;
-        }
-
-        @media (max-width: 600px) {
-            .notification-stack {
-                top: 72px;
-                right: 16px;
-            }
         }
     </style>
 
