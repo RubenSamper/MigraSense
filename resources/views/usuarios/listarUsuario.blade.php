@@ -203,7 +203,7 @@
             overflow-x: auto;
         }
 
-        @media (max-width: 1000px) {
+        @media (max-width: 700px) {
             .listado-usuarios {
                 margin: 24px auto 40px;
             }
@@ -227,9 +227,31 @@
             .dataTables_wrapper .dataTables_length select {
                 margin-left: 0;
             }
-        }
 
-        @media (max-width: 480px) {
+            /* En escritorio DataTables calcula y fija el ancho de cada columna
+               en píxeles con un style="width:...px" en línea (más prioridad que
+               cualquier regla de este archivo). Al convertir las filas en
+               "tarjetas" abajo, hay que forzar esos anchos a auto con
+               !important, si no cada tarjeta se queda encajonada en su ancho
+               estrecho de escritorio y el contenido se ve cortado. */
+            .listado-usuarios,
+            .dataTables_wrapper,
+            .listado-usuarios table,
+            .listado-usuarios tbody,
+            .listado-usuarios tr,
+            .listado-usuarios td {
+                width: auto !important;
+                max-width: 100% !important;
+            }
+
+            .dataTables_wrapper {
+                overflow-x: hidden;
+            }
+
+            .listado-usuarios table {
+                table-layout: auto !important;
+            }
+
             .listado-usuarios thead {
                 display: none;
             }
@@ -238,8 +260,7 @@
             .listado-usuarios tbody,
             .listado-usuarios tr,
             .listado-usuarios td {
-                display: block;
-                width: 100%;
+                display: block !important;
             }
 
             .listado-usuarios tbody tr {
@@ -247,11 +268,15 @@
                 border: 1px solid var(--line);
                 border-radius: 10px;
                 padding: 8px 10px;
+                box-sizing: border-box;
             }
 
             .listado-usuarios tbody td {
                 border-bottom: none;
                 padding: 6px 4px;
+                box-sizing: border-box;
+                white-space: normal !important;
+                word-break: break-word;
             }
 
             .listado-usuarios tbody td::before {
@@ -262,6 +287,10 @@
                 color: var(--muted);
                 text-transform: uppercase;
                 margin-bottom: 2px;
+            }
+
+            .acciones-usuario {
+                justify-content: flex-start;
             }
         }
     </style>
@@ -282,6 +311,10 @@
                 ],
                 "processing": true,
                 "serverSide": true,
+                // Sin esto, DataTables fija el ancho de cada columna en píxeles
+                // pensado para escritorio, y esos estilos en línea rompen la
+                // vista de "tarjetas" en móvil (ver el media query de arriba).
+                "autoWidth": false,
 
                 "ajax": {
                     "url": "{{ route('usuarios.getListadoUsuario') }}",
@@ -300,32 +333,20 @@
                     },
                     {
                         data: 'nombre',
-                        name: 'nombre',
-                        render: function (data) {
-                            return '<span data-label="Nombre">' + data + '</span>';
-                        }
+                        name: 'nombre'
                     },
                     {
                         data: 'apellidos',
-                        name: 'apellidos',
-                        render: function (data) {
-                            return '<span data-label="Apellidos">' + data + '</span>';
-                        }
+                        name: 'apellidos'
                     },
                     {
                         data: 'correo',
-                        name: 'correo',
-                        render: function (data) {
-                            return '<span data-label="Correo">' + data + '</span>';
-                        }
+                        name: 'correo'
                     },
                     {
                         data: 'rol_nombre',
                         name: 'rol_nombre',
-                        searchable: false,
-                        render: function (data) {
-                            return '<span data-label="Rol">' + data + '</span>';
-                        }
+                        searchable: false
                     },
                     {
                         data: null,
@@ -333,7 +354,7 @@
                         orderable: false,
                         searchable: false,
                         render: function (data, type, row, meta) {
-                            var acciones = '<div class="acciones-usuario" data-label="Acciones">';
+                            var acciones = '<div class="acciones-usuario">';
 
                             if (row.puede_editar) {
                                 acciones += '<a href="' + editBaseUrl.replace(':id', row.id) + '" class="icon-button icon-button-editar" title="Editar usuario" aria-label="Editar usuario ' + row.nombre + '">✏️</a>';
@@ -349,6 +370,18 @@
                             return acciones;
                         },
                     }
+                ],
+                // Ponemos la etiqueta (para la vista de "tarjeta" en móvil) por
+                // columna real, no contando celdas a mano: la columna "Id" no
+                // llega a pintarse en el HTML (va oculta), así que contar
+                // celdas visibles desplazaba todas las etiquetas una posición
+                // y ninguna coincidía con su dato.
+                "columnDefs": [
+                    { targets: 1, createdCell: function (td) { $(td).attr('data-label', 'Nombre'); } },
+                    { targets: 2, createdCell: function (td) { $(td).attr('data-label', 'Apellidos'); } },
+                    { targets: 3, createdCell: function (td) { $(td).attr('data-label', 'Correo'); } },
+                    { targets: 4, createdCell: function (td) { $(td).attr('data-label', 'Rol'); } },
+                    { targets: 5, createdCell: function (td) { $(td).attr('data-label', 'Acciones'); } }
                 ],
                 language: {
                     "decimal": ",",
