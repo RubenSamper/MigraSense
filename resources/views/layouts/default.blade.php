@@ -161,7 +161,9 @@
             <div>
                 <h4 style="margin: 0 0 8px; font-size: 1.1em;">Enlaces</h4>
                 <p style="margin: 0; font-size: 0.85em; opacity: 0.8;">
-                    <a href="{{ route('landingPage') }}" style="color: white; text-decoration: none;">Inicio</a> ·
+                    @if(!Auth::check() || Auth::user()->rol_id == 2)
+                        <a href="{{ route('landingPage') }}" style="color: white; text-decoration: none;">Inicio</a> ·
+                    @endif
                     <a href="{{ route('usuarios.createUsuario') }}"
                         style="color: white; text-decoration: none;">Registro</a>
                 </p>

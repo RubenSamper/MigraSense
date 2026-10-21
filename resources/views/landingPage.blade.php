@@ -138,7 +138,9 @@
             <p class="landing-hero-copy">MigraSense compara los datos oficiales de AEMET con tu sensibilidad personal y te muestra un aviso claro, verde, amarillo o rojo, antes de que el dolor aparezca.</p>
             <div class="landing-actions">
                 @auth
-                    <a class="landing-button landing-button-primary" href="{{ route('usuarios.dashboard') }}">Ir a mi panel</a>
+                    @if(Auth::user()->rol_id == 2)
+                        <a class="landing-button landing-button-primary" href="{{ route('usuarios.dashboard') }}">Ir a mi panel</a>
+                    @endif
                 @else
                     <a class="landing-button landing-button-primary" href="{{ route('usuarios.createUsuario') }}">Crear una cuenta</a>
                     <a class="landing-button landing-button-secondary" href="{{ route('usuarios.login') }}">Iniciar sesión</a>
@@ -218,8 +220,10 @@
     <section class="landing-cta">
         <div class="landing-section landing-cta-inner">
             @auth
-                <div><h2>Sigue anticipándote a tu migraña.</h2><p>Consulta tu riesgo diario y registra un nuevo episodio desde tu panel.</p></div>
-                <a class="landing-button landing-button-dark" href="{{ route('usuarios.dashboard') }}">Ir a mi panel</a>
+                @if(Auth::user()->rol_id == 2)
+                    <div><h2>Sigue anticipándote a tu migraña.</h2><p>Consulta tu riesgo diario y registra un nuevo episodio desde tu panel.</p></div>
+                    <a class="landing-button landing-button-dark" href="{{ route('usuarios.dashboard') }}">Ir a mi panel</a>
+                @endif
             @else
                 <div><h2>Empieza a anticiparte a tu migraña.</h2><p>Crea tu cuenta, configura tu ubicación y tu sensibilidad, y empieza a ver tu riesgo diario.</p></div>
                 <a class="landing-button landing-button-dark" href="{{ route('usuarios.createUsuario') }}">Empezar ahora</a>
