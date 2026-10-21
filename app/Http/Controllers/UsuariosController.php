@@ -19,30 +19,51 @@ class UsuariosController extends Controller
 
     public function obtenerListadoUsuarios()
     {
+        $this->requiereAdmin();
         return view('usuarios.listarUsuario');
     }
 
     public function getListadoUsuario(Request $request)
     {
-        $where = '';
+        $this->requiereAdmin();
+        return $this->listadoPorRol($request, 2);
+    }
+
+    public function listarMedicos()
+    {
+        $this->requiereAdmin();
+        return view('usuarios.listarMedico');
+    }
+
+    public function getListadoMedico(Request $request)
+    {
+        $this->requiereAdmin();
+        return $this->listadoPorRol($request, 3);
+    }
+
+    // Listado paginado/buscable (DataTables server-side) de usuarios de un
+    // rol concreto. Lo usan tanto la tabla de pacientes (rol 2) como la de
+    // médicos (rol 3), para no repetir la misma construcción de SQL dos veces.
+    private function listadoPorRol(Request $request, int $rolId)
+    {
+        $condiciones = ['u.rol_id = ' . $rolId];
 
         if (!empty($request->search['value'])) {
-            $stringAdded = false;
-            $where .= 'WHERE ';
+            $busqueda = [];
             for ($i = 0; $i < count($request->columns); $i++) {
-
                 $searchable = json_decode($request->columns[$i]['searchable']);
 
                 if ($searchable) {
-                    if ($stringAdded) {
-                        $where .= ' OR ';
-                    }
-
-                    $where .= 'u.' . $request->columns[$i]['name'] . ' LIKE \'%' . $request->search['value'] . '%\'';
-                    $stringAdded = true;
+                    $busqueda[] = 'u.' . $request->columns[$i]['name'] . ' LIKE \'%' . $request->search['value'] . '%\'';
                 }
             }
+
+            if (!empty($busqueda)) {
+                $condiciones[] = '(' . implode(' OR ', $busqueda) . ')';
+            }
         }
+
+        $where = 'WHERE ' . implode(' AND ', $condiciones);
 
         $orderBy = 'ORDER BY ' . $request->columns[$request->order[0]['column']]['name'] . ' ' . $request->order[0]['dir'];
 
@@ -54,7 +75,7 @@ class UsuariosController extends Controller
         $resultados = DB::select('SELECT u.*, r.nombre as rol_nombre FROM usuarios u JOIN roles r ON u.rol_id = r.id ' . $where . ' ' . $orderBy . ' ' . $paginacion);
 
         $recordsFiltered = DB::select('SELECT COUNT(u.id) as recordsNum FROM usuarios u JOIN roles r ON u.rol_id = r.id ' . $where)[0]->recordsNum;
-        $recordsTotal = DB::select('SELECT COUNT(id) as recordsNum FROM usuarios')[0]->recordsNum;
+        $recordsTotal = DB::select('SELECT COUNT(id) as recordsNum FROM usuarios WHERE rol_id = ' . $rolId)[0]->recordsNum;
 
         $datos = array();
 
@@ -77,6 +98,8 @@ class UsuariosController extends Controller
 
     public function eliminarUsuario(Request $request)
     {
+        $this->requiereAdmin();
+
         $request->validate([
             'id' => [
                 'required',
@@ -90,14 +113,63 @@ class UsuariosController extends Controller
             return response()->json(['message' => 'No tienes permiso para eliminar este usuario.'], 403);
         }
 
+        // Guardamos el rol antes de borrar, para poder decir "Paciente" o
+        // "Médico" en el mensaje en vez del genérico "Usuario".
+        $tipo = ((int) $usuario->rol_id === 3) ? 'Médico' : 'Paciente';
+
         $usuario->delete();
 
-        return response()->json(['success' => true, 'message' => 'Usuario eliminado correctamente']);
+        return response()->json(['success' => true, 'message' => "{$tipo} eliminado correctamente"]);
     }
 
     public function createUsuario()
     {
-        return view('usuarios.crearUsuario');
+        $medicos = DB::select("SELECT id, nombre, apellidos FROM usuarios WHERE rol_id = 3 ORDER BY nombre, apellidos");
+        return view('usuarios.crearUsuario', compact('medicos'));
+    }
+
+    public function crearMedico()
+    {
+        $this->requiereAdmin();
+        return view('usuarios.crearMedico');
+    }
+
+    public function almacenarMedico(Request $request)
+    {
+        $this->requiereAdmin();
+
+        $request->validate([
+            'nombre' => [
+                'required',
+                'regex:/^[\pL\s]+$/u',
+                'max:255'
+            ],
+            'apellidos' => [
+                'required',
+                'regex:/^[\pL\s]+$/u',
+                'max:255'
+            ],
+            'correo' => [
+                'required',
+                'email',
+                'unique:usuarios,correo'
+            ],
+            'password' => [
+                'required',
+                'min:8'
+            ]
+        ], self::mensajesValidacionUsuario());
+
+        Usuario::create([
+            'id' => self::generarUUID(),
+            'nombre' => $request->nombre,
+            'apellidos' => $request->apellidos,
+            'correo' => $request->correo,
+            'password' => Hash::make($request->password),
+            'rol_id' => 3
+        ]);
+
+        return redirect()->route('usuarios.listarMedicos')->with('success', 'Médico creado correctamente.');
     }
 
     public function validarNombreUsuario(Request $request)
@@ -178,8 +250,15 @@ class UsuariosController extends Controller
             'password' => [
                 'required',
                 'min:8'
+            ],
+            'medico_id' => [
+                'required',
+                'exists:usuarios,id,rol_id,3'
             ]
-        ], self::mensajesValidacionUsuario());
+        ], self::mensajesValidacionUsuario() + [
+            'medico_id.required' => 'Tienes que elegir un médico.',
+            'medico_id.exists' => 'El médico elegido no es válido.',
+        ]);
 
         Usuario::create([
             'id' => self::generarUUID(),
@@ -187,24 +266,32 @@ class UsuariosController extends Controller
             'apellidos' => $request->apellidos,
             'correo' => $request->correo,
             'password' => Hash::make($request->password),
-            'rol_id' => 2
+            'rol_id' => 2,
+            'medico_id' => $request->medico_id,
         ]);
 
-        // Cuenta creada: mandamos al usuario a la pantalla de login (no se
-        // inicia sesión automáticamente) con un aviso de que ya puede entrar.
         return redirect()
             ->route('usuarios.login')
-            ->with('success', 'Usuario creado correctamente. Ya puedes iniciar sesión.');
+            ->with('success', 'Paciente creado correctamente. Ya puedes iniciar sesión.');
     }
 
     public function dashboard()
     {
+        // El dashboard es de seguimiento de presión/migrañas del propio
+        // paciente; un médico no tiene nada que ver ahí, así que si entra
+        // por URL directa lo mandamos a su listado de pacientes.
+        if ((int) Auth::user()->rol_id === 3) {
+            return redirect()->route('usuarios.medico.misPacientes');
+        }
+
         $usuario = Auth::user();
         $aemet = new \App\Services\AemetService();
 
         $datosClima = null;
         $riesgo = ['nivel' => 'desconocido', 'variacion_hpa' => null];
         $observaciones = [];
+        $previsionTemperatura = [];
+        $previsionPresion = [];
 
         if ($usuario->latitud && $usuario->longitud) {
             $estacion = $aemet->estacionConDatosMasCercana((float) $usuario->latitud, (float) $usuario->longitud);
@@ -213,17 +300,23 @@ class UsuariosController extends Controller
                 if (!empty($observaciones)) {
                     $riesgo = $aemet->calcularRiesgoMigrana($observaciones, $usuario->sensibilidad_presion);
 
-                    \App\Models\HistorialRiesgo::updateOrCreate(
-                        [
-                            'usuario_id' => $usuario->id,
-                            'fecha' => now()->toDateString(),
-                        ],
-                        [
-                            'id' => (string) \Illuminate\Support\Str::uuid(),
-                            'nivel' => $riesgo['nivel'],
-                            'variacion_hpa' => $riesgo['variacion_hpa'],
-                        ]
-                    );
+                    // Si no hay datos suficientes para calcular un nivel real, no lo
+                    // guardamos en el historial: la columna 'nivel' solo admite
+                    // verde/amarillo/rojo, y "desconocido" solo es un estado de la
+                    // vista para ese día, no un dato histórico real.
+                    if ($riesgo['nivel'] !== 'desconocido') {
+                        \App\Models\HistorialRiesgo::updateOrCreate(
+                            [
+                                'usuario_id' => $usuario->id,
+                                'fecha' => now()->toDateString(),
+                            ],
+                            [
+                                'id' => (string) \Illuminate\Support\Str::uuid(),
+                                'nivel' => $riesgo['nivel'],
+                                'variacion_hpa' => $riesgo['variacion_hpa'],
+                            ]
+                        );
+                    }
 
                     $ultimaObservacion = end($observaciones);
 
@@ -231,12 +324,120 @@ class UsuariosController extends Controller
                         'estacion_nombre' => $estacion['ubi'] ?? $estacion['nombre'] ?? 'Desconocida',
                         'temperatura_actual' => $ultimaObservacion['ta'] ?? null,
                         'presion_actual' => $ultimaObservacion['pres_nmar'] ?? null,
+                        // Se pone a true más abajo si el dato de la estación está
+                        // desfasado y lo sustituimos por la estimación de la hora
+                        // actual, para poder avisar de ello en la vista.
+                        'actual_es_estimado' => false,
                         'observaciones' => array_map(fn($obs) => [
                             'hora' => substr($obs['fint'] ?? '', 11, 5),
                             'temperatura' => $obs['ta'] ?? null,
                             'presion' => $obs['pres_nmar'] ?? null,
                         ], $observaciones),
                     ];
+
+                    // Previsión para el resto del día. La temperatura viene de la
+                    // predicción horaria oficial de AEMET (por municipio); AEMET no
+                    // da predicción de presión, así que esa se estima con una
+                    // tendencia lineal propia a partir de las últimas observaciones
+                    // reales. Todo esto es "best effort": si algo falla, no se
+                    // muestra previsión, pero el resto del dashboard sigue
+                    // funcionando con datos reales.
+                    try {
+                        $ahora = \Carbon\Carbon::now('Europe/Madrid');
+
+                        // La previsión tiene que empezar justo donde terminan los
+                        // datos REALES, no a partir de la hora actual del
+                        // servidor: la estación de AEMET suele ir unas horas por
+                        // detrás (su última observación puede ser, por ejemplo,
+                        // de las 12:00 aunque ya sean las 15:00). Si usáramos la
+                        // hora actual, quedaría un hueco sin datos entre la
+                        // última observación real y el principio de la
+                        // previsión. Por eso la previsión arranca en la hora
+                        // siguiente a la ÚLTIMA observación real disponible.
+                        $horaInicioPrevision = !empty($ultimaObservacion['fint'])
+                            ? ((int) substr($ultimaObservacion['fint'], 11, 2)) + 1
+                            : ((int) $ahora->format('H')) + 1;
+                        $horasRestantes = $horaInicioPrevision <= 23 ? range($horaInicioPrevision, 23) : [];
+
+                        if (!empty($horasRestantes)) {
+                            // --- Temperatura: predicción horaria oficial de AEMET ---
+                            $municipio = $aemet->municipioMasCercano((float) $usuario->latitud, (float) $usuario->longitud);
+
+                            if ($municipio && !empty($municipio['id'])) {
+                                $prediccionAemet = $aemet->obtenerPrevisionHoraria($municipio['id']);
+                                $hoyStr = $ahora->toDateString();
+
+                                foreach ($horasRestantes as $h) {
+                                    $horaEtiqueta = sprintf('%02d:00', $h);
+                                    $punto = collect($prediccionAemet)->first(
+                                        fn($p) => ($p['fecha'] ?? null) === $hoyStr && ($p['hora'] ?? null) === $horaEtiqueta
+                                    );
+                                    if ($punto) {
+                                        $previsionTemperatura[] = [
+                                            'hora' => $horaEtiqueta,
+                                            'valor' => $punto['valor'],
+                                        ];
+                                    }
+                                }
+                            }
+
+                            // --- Presión: estimación propia por tendencia lineal ---
+                            $ultimasPresiones = array_values(array_filter(array_map(
+                                fn($obs) => isset($obs['pres_nmar']) ? (float) $obs['pres_nmar'] : null,
+                                array_slice($observaciones, -4)
+                            ), fn($valor) => $valor !== null));
+
+                            if (count($ultimasPresiones) >= 2) {
+                                $n = count($ultimasPresiones);
+                                $tendenciaHora = ($ultimasPresiones[$n - 1] - $ultimasPresiones[0]) / ($n - 1);
+                                $presionBase = $ultimasPresiones[$n - 1];
+
+                                $paso = 1;
+                                foreach ($horasRestantes as $h) {
+                                    $previsionPresion[] = [
+                                        'hora' => sprintf('%02d:00', $h),
+                                        'valor' => round($presionBase + ($tendenciaHora * $paso), 1),
+                                    ];
+                                    $paso++;
+                                }
+                            }
+                        }
+
+                        // Si la última observación real de la estación es de
+                        // una hora anterior a la actual (va con retraso),
+                        // los recuadros de "Temperatura actual" / "Presión
+                        // actual" no deben quedarse enseñando ese dato viejo
+                        // como si fuera el de ahora: los sustituimos por la
+                        // estimación de la hora en la que se está
+                        // consultando el dashboard, que es lo que de verdad
+                        // se quiere ver al entrar.
+                        $horaUltimaObservacion = !empty($ultimaObservacion['fint'])
+                            ? (int) substr($ultimaObservacion['fint'], 11, 2)
+                            : null;
+                        $horaActual = (int) $ahora->format('H');
+
+                        if ($horaUltimaObservacion !== null && $horaUltimaObservacion < $horaActual) {
+                            $etiquetaHoraActual = sprintf('%02d:00', $horaActual);
+
+                            $temperaturaActualEstimada = collect($previsionTemperatura)->firstWhere('hora', $etiquetaHoraActual);
+                            if ($temperaturaActualEstimada) {
+                                $datosClima['temperatura_actual'] = $temperaturaActualEstimada['valor'];
+                                $datosClima['actual_es_estimado'] = true;
+                            }
+
+                            $presionActualEstimada = collect($previsionPresion)->firstWhere('hora', $etiquetaHoraActual);
+                            if ($presionActualEstimada) {
+                                $datosClima['presion_actual'] = $presionActualEstimada['valor'];
+                                $datosClima['actual_es_estimado'] = true;
+                            }
+                        }
+                    } catch (\Throwable $e) {
+                        $previsionTemperatura = [];
+                        $previsionPresion = [];
+                    }
+
+                    $datosClima['prevision_temperatura'] = $previsionTemperatura;
+                    $datosClima['prevision_presion'] = $previsionPresion;
                 }
             }
         }
@@ -257,21 +458,56 @@ class UsuariosController extends Controller
 
         if (Auth::attempt(['correo' => $request->correo, 'password' => $request->password])) {
             $usuario = Auth::user();
+
             if ((int) $usuario->rol_id === 1) {
                 return redirect()
                     ->route('usuarios.obtenerListadoUsuarios')
                     ->with('success', 'Sesión iniciada correctamente.');
             }
+
+            if ((int) $usuario->rol_id === 3) {
+                return redirect()
+                    ->route('usuarios.medico.misPacientes')
+                    ->with('success', 'Sesión iniciada correctamente.');
+            }
+
             return redirect()
                 ->route('usuarios.dashboard')
-                ->with('success', 'Sesión iniciada correctamente.');
+                ->with('success', 'Sesión iniciada correctamente.')
+                ->with('diagnostico_nuevo', $this->mensajeDiagnosticoNuevo($usuario));
         }
 
         return back()->with('error', 'Credenciales incorrectas.');
     }
 
+    // Si el paciente tiene algún diagnóstico que su médico le ha dejado y
+    // todavía no ha visto (columna `diagnostico_visto` en `migranas`), le
+    // avisamos ya al iniciar sesión, en vez de esperar a que entre por su
+    // cuenta en "Seguimiento de migraña". Se sigue avisando en cada login
+    // mientras quede al menos un diagnóstico sin ver; en cuanto entra a
+    // ver sus episodios se marca como visto (MigranaController::
+    // seguimientoMigrana()) y este aviso deja de salir.
+    private function mensajeDiagnosticoNuevo(Usuario $usuario): ?string
+    {
+        if ((int) $usuario->rol_id !== 2) {
+            return null;
+        }
+
+        $hayDiagnosticoNuevo = \App\Models\TipoMigrana::query()
+            ->where('usuario_id', $usuario->id)
+            ->whereNotNull('diagnostico')
+            ->where('diagnostico_visto', false)
+            ->exists();
+
+        return $hayDiagnosticoNuevo
+            ? 'Tu médico te ha dejado un nuevo diagnóstico. Entra en "Seguimiento de migraña" para verlo.'
+            : null;
+    }
+
     public function editarUsuario($id)
     {
+        $this->requiereAdmin();
+
         $usuario = Usuario::findOrFail($id);
 
         if (!$this->puedeGestionarUsuario($usuario->id, $usuario->rol_id)) {
@@ -284,6 +520,8 @@ class UsuariosController extends Controller
 
     public function actualizarUsuario(Request $request, $id)
     {
+        $this->requiereAdmin();
+
         $usuario = Usuario::findOrFail($id);
 
         if (!$this->puedeGestionarUsuario($usuario->id, $usuario->rol_id)) {
@@ -309,7 +547,15 @@ class UsuariosController extends Controller
 
         $usuario->save();
 
-        return redirect()->route('usuarios.obtenerListadoUsuarios')->with('success', 'Usuario actualizado correctamente.');
+        // Si el usuario editado es médico, vuelve al listado de médicos;
+        // si es paciente o admin, al listado de pacientes (que es donde
+        // estaba la gestión general hasta ahora). El mensaje también dice
+        // "Paciente" o "Médico" en vez del genérico "Usuario".
+        $esMedico = (int) $usuario->rol_id === 3;
+        $destino = $esMedico ? 'usuarios.listarMedicos' : 'usuarios.obtenerListadoUsuarios';
+        $tipo = $esMedico ? 'Médico' : 'Paciente';
+
+        return redirect()->route($destino)->with('success', "{$tipo} actualizado correctamente.");
     }
 
     public function configuracion()
@@ -373,6 +619,16 @@ class UsuariosController extends Controller
         }
 
         return $rolActual === 1;
+    }
+
+    // Corta el paso a cualquiera que no sea admin (incluido un visitante sin
+    // sesión) antes de tocar datos de pacientes/médicos. Estas rutas de
+    // gestión no tenían ninguna comprobación de esto hasta ahora.
+    private function requiereAdmin(): void
+    {
+        if (!Auth::check() || (int) Auth::user()->rol_id !== 1) {
+            abort(403, 'No tienes permiso para acceder aquí.');
+        }
     }
 
     public function validarPasswordUsuario(Request $request)

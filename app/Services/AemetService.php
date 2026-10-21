@@ -220,4 +220,116 @@ class AemetService
 
         return $masCercana;
     }
+
+    /**
+     * Devuelve el listado completo de municipios de AEMET (necesario para
+     * pedir la predicción horaria, que se consulta por municipio, no por
+     * estación). Se cachea 30 días porque este listado casi nunca cambia.
+     */
+    public function obtenerMunicipios(): array
+    {
+        return Cache::remember('aemet_municipios', now()->addDays(30), function () {
+            return $this->peticionDosPasos('/maestro/municipios') ?? [];
+        });
+    }
+
+    /**
+     * Encuentra el municipio de AEMET más cercano a unas coordenadas dadas.
+     * Admite tanto campos ya decimales (latitud_dec/longitud_dec) como el
+     * formato DDMMSSH de AEMET (latitud/longitud), según lo que venga.
+     */
+    public function municipioMasCercano(float $latUsuario, float $lonUsuario): ?array
+    {
+        $municipios = $this->obtenerMunicipios();
+
+        if (empty($municipios)) {
+            return null;
+        }
+
+        $masCercano = null;
+        $distanciaMinima = null;
+
+        foreach ($municipios as $municipio) {
+            $lat = null;
+            $lon = null;
+
+            if (!empty($municipio['latitud_dec']) && !empty($municipio['longitud_dec'])) {
+                $lat = (float) $municipio['latitud_dec'];
+                $lon = (float) $municipio['longitud_dec'];
+            } elseif (!empty($municipio['latitud']) && !empty($municipio['longitud'])) {
+                try {
+                    $lat = $this->coordenadaADecimal($municipio['latitud']);
+                    $lon = $this->coordenadaADecimal($municipio['longitud']);
+                } catch (\Throwable $e) {
+                    continue;
+                }
+            }
+
+            if ($lat === null || $lon === null) {
+                continue;
+            }
+
+            $distancia = $this->distanciaHaversine($latUsuario, $lonUsuario, $lat, $lon);
+
+            if ($distanciaMinima === null || $distancia < $distanciaMinima) {
+                $distanciaMinima = $distancia;
+                $masCercano = $municipio;
+                $masCercano['distancia_km'] = round($distancia, 1);
+            }
+        }
+
+        return $masCercano;
+    }
+
+    /**
+     * Devuelve la predicción horaria de temperatura (°C) de AEMET para un
+     * municipio, como lista de ['hora' => 'HH:00', 'valor' => float].
+     * AEMET no da predicción de presión atmosférica en este producto, solo
+     * temperatura (y otras variables que no usamos aquí).
+     *
+     * Se implementa a propósito de forma defensiva: si el formato del JSON
+     * no es el esperado, se devuelve un array vacío en vez de lanzar un
+     * error, para que el dashboard nunca se rompa por esto.
+     */
+    public function obtenerPrevisionHoraria(string $codigoMunicipio): array
+    {
+        // El maestro de municipios devuelve ids con el prefijo "id" (ej.
+        // "id28079"); el endpoint de predicción espera solo el número.
+        $codigo = preg_replace('/^id/', '', $codigoMunicipio);
+
+        try {
+            $respuesta = $this->peticionDosPasos("/prediccion/especifica/municipio/horaria/{$codigo}");
+
+            if (!is_array($respuesta) || empty($respuesta[0]['prediccion']['dia'])) {
+                return [];
+            }
+
+            $resultado = [];
+
+            foreach ($respuesta[0]['prediccion']['dia'] as $dia) {
+                $fecha = $dia['fecha'] ?? null;
+                $temperaturas = $dia['temperatura'] ?? [];
+
+                if (!$fecha || !is_array($temperaturas)) {
+                    continue;
+                }
+
+                foreach ($temperaturas as $punto) {
+                    if (!isset($punto['periodo'], $punto['value']) || $punto['value'] === '') {
+                        continue;
+                    }
+
+                    $resultado[] = [
+                        'fecha' => substr($fecha, 0, 10),
+                        'hora' => sprintf('%02d:00', (int) $punto['periodo']),
+                        'valor' => (float) $punto['value'],
+                    ];
+                }
+            }
+
+            return $resultado;
+        } catch (\Throwable $e) {
+            return [];
+        }
+    }
 }

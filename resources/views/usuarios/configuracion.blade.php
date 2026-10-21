@@ -190,12 +190,13 @@
 
             $.getJSON("{{ route('usuarios.estacionesAemetDisponibles') }}", function (estaciones) {
                 estacionesDisponibles = estaciones;
-                $('#configLocationStatus').text('Escribe el nombre de tu localidad o provincia para buscar.');
 
                 const latitudGuardada = '{{ $usuario->latitud }}';
                 const longitudGuardada = '{{ $usuario->longitud }}';
 
                 if (latitudGuardada && longitudGuardada) {
+                    $('#configLocationStatus').text('Escribe el nombre de tu localidad o provincia para buscar.');
+
                     const coincidencia = estaciones.find((estacion) =>
                         Math.abs(estacion.lat - parseFloat(latitudGuardada)) < 0.01 &&
                         Math.abs(estacion.lon - parseFloat(longitudGuardada)) < 0.01
@@ -204,18 +205,22 @@
                     if (coincidencia) {
                         seleccionarEstacion(coincidencia);
                     }
+                } else {
+                    // Todavía no hay ninguna ubicación guardada: la
+                    // detectamos nosotros mismos nada más cargar la página,
+                    // sin que haga falta pulsar ningún botón. El botón
+                    // "Usar mi ubicación actual" se deja igualmente, por si
+                    // el navegador se la deniega o quiere repetir la
+                    // detección más tarde.
+                    usarUbicacionAutomatica();
                 }
             }).fail(function () {
                 $('#configLocationStatus').text('No se pudo cargar la lista de estaciones. Inténtalo de nuevo más tarde.');
             });
         }
 
-        function quitarAcentos(texto) {
-            return texto.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-        }
-
         function filtrarEstaciones() {
-            const texto = quitarAcentos($('#buscadorEstacion').val().trim().toLowerCase());
+            const texto = $('#buscadorEstacion').val().trim().toLowerCase();
             const lista = $('#listaEstaciones');
 
             if (texto.length < 2) {
@@ -224,7 +229,7 @@
             }
 
             const coincidencias = estacionesDisponibles
-                .filter((estacion) => quitarAcentos(estacion.nombre.toLowerCase()).includes(texto))
+                .filter((estacion) => estacion.nombre.toLowerCase().includes(texto))
                 .slice(0, 20);
 
             lista.empty();
@@ -319,7 +324,7 @@
                     sensibilidad_presion: sensibilidad
                 },
                 success: function () {
-                    window.location.href = "{{ route('usuarios.dashboard') }}?config_guardada=1";
+                    $('#configStatus').text('Configuración guardada correctamente.');
                 },
                 error: function () {
                     $('#configStatus').text('No se pudo guardar la configuración. Inténtalo de nuevo.');
@@ -348,20 +353,16 @@
         <form onsubmit="guardarConfiguracion(event)">
             <div class="config-section">
                 <h3>Ubicación</h3>
-                <p class="hint">Elige entre las estaciones meteorológicas oficiales de AEMET, para asegurar que siempre haya
-                    datos disponibles.</p>
+                <p class="hint">Elige entre las estaciones meteorológicas oficiales de AEMET, para asegurar que siempre haya datos disponibles.</p>
                 <div class="config-field config-select-wrap">
                     <label for="buscadorEstacion">Busca tu localidad o provincia</label>
-                    <input type="text" id="buscadorEstacion" placeholder="Ej: Almería, Madrid, Barcelona..."
-                        autocomplete="off">
+                    <input type="text" id="buscadorEstacion" placeholder="Ej: Almería, Madrid, Barcelona..." autocomplete="off">
                     <div id="listaEstaciones" class="config-station-list"></div>
                 </div>
                 <input type="hidden" id="latitud">
                 <input type="hidden" id="longitud">
-                <button type="button" class="config-button-secondary" onclick="usarUbicacionAutomatica()">Usar mi ubicación
-                    actual</button>
-                <p id="configLocationStatus" class="config-location-status" role="status">Cargando lista de estaciones...
-                </p>
+                <button type="button" class="config-button-secondary" onclick="usarUbicacionAutomatica()">Usar mi ubicación actual</button>
+                <p id="configLocationStatus" class="config-location-status" role="status">Cargando lista de estaciones...</p>
             </div>
 
             <div class="config-section">

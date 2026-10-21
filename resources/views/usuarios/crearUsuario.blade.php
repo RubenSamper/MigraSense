@@ -147,6 +147,29 @@
             height: 18px;
         }
 
+        .registro-wrapper select {
+            width: 100%;
+            padding: 12px 13px;
+            border: 1px solid #b7c8ce;
+            border-radius: 8px;
+            font-size: 1em;
+            box-sizing: border-box;
+            color: #173042;
+            background: #fff;
+        }
+
+        .registro-wrapper select:focus {
+            outline: none;
+            border-color: #007f86;
+            box-shadow: 0 0 0 3px rgba(0, 127, 134, .14);
+        }
+
+        .campo-ayuda {
+            margin: 5px 0 0;
+            font-size: .85em;
+            color: #60747d;
+        }
+
         @media (max-width: 480px) {
             .registro-wrapper {
                 margin: 24px auto;
@@ -309,6 +332,20 @@
                         hidden aria-hidden="true"></span></div>
                 <p id="passwordMensaje" class="campo-mensaje" aria-live="polite">Debe tener al menos 8 caracteres.</p>
                 @error('password')
+                    <span class="campo-mensaje error server-error">{{ $message }}</span>
+                @enderror
+            </div>
+            <div class="campo">
+                <label for="medico_id">Médico</label>
+                <select id="medico_id" name="medico_id" required>
+                    <option value="" disabled @selected(!old('medico_id'))>Elige tu médico</option>
+                    @foreach ($medicos as $medico)
+                        <option value="{{ $medico->id }}" @selected(old('medico_id') === $medico->id)>
+                            {{ $medico->nombre }} {{ $medico->apellidos }}
+                        </option>
+                    @endforeach
+                </select>
+                @error('medico_id')
                     <span class="campo-mensaje error server-error">{{ $message }}</span>
                 @enderror
             </div>

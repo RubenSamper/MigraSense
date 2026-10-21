@@ -64,20 +64,32 @@
         </a>
         <div class="site-nav-links">
             @auth
-                <a href="{{ route('usuarios.dashboard') }}"
-                    class="nav-link {{ request()->routeIs('usuarios.dashboard') ? 'nav-link-active' : '' }}"
-                    @if(request()->routeIs('usuarios.dashboard')) aria-current="page" @endif>Dashboard</a>
-                @if(in_array(Auth::user()->rol_id, [1, 3]))
+                @if(Auth::user()->rol_id == 2)
+                    <a href="{{ route('usuarios.dashboard') }}"
+                        class="nav-link {{ request()->routeIs('usuarios.dashboard') ? 'nav-link-active' : '' }}"
+                        @if(request()->routeIs('usuarios.dashboard')) aria-current="page" @endif>Inicio</a>
+                    <a href="{{ route('usuarios.seguimientoMigrana') }}"
+                        class="nav-link {{ request()->routeIs('usuarios.seguimientoMigrana') ? 'nav-link-active' : '' }}"
+                        @if(request()->routeIs('usuarios.seguimientoMigrana')) aria-current="page" @endif>Seguimiento</a>
+                    <a href="{{ route('usuarios.configuracion') }}"
+                        class="nav-link {{ request()->routeIs('usuarios.configuracion') ? 'nav-link-active' : '' }}"
+                        @if(request()->routeIs('usuarios.configuracion')) aria-current="page" @endif>Configuración</a>
+                @endif
+
+                @if(Auth::user()->rol_id == 1)
                     <a href="{{ route('usuarios.obtenerListadoUsuarios') }}"
                         class="nav-link {{ request()->routeIs('usuarios.obtenerListadoUsuarios') ? 'nav-link-active' : '' }}"
-                        @if(request()->routeIs('usuarios.obtenerListadoUsuarios')) aria-current="page" @endif>Usuarios</a>
+                        @if(request()->routeIs('usuarios.obtenerListadoUsuarios')) aria-current="page" @endif>Pacientes</a>
+                    <a href="{{ route('usuarios.listarMedicos') }}"
+                        class="nav-link {{ request()->routeIs('usuarios.listarMedicos') || request()->routeIs('usuarios.crearMedico') ? 'nav-link-active' : '' }}"
+                        @if(request()->routeIs('usuarios.listarMedicos') || request()->routeIs('usuarios.crearMedico')) aria-current="page" @endif>Médicos</a>
                 @endif
-                <a href="{{ route('usuarios.seguimientoMigrana') }}"
-                    class="nav-link {{ request()->routeIs('usuarios.seguimientoMigrana') ? 'nav-link-active' : '' }}"
-                    @if(request()->routeIs('usuarios.seguimientoMigrana')) aria-current="page" @endif>Seguimiento</a>
-                <a href="{{ route('usuarios.configuracion') }}"
-                    class="nav-link {{ request()->routeIs('usuarios.configuracion') ? 'nav-link-active' : '' }}"
-                    @if(request()->routeIs('usuarios.configuracion')) aria-current="page" @endif>Configuración</a>
+
+                @if(Auth::user()->rol_id == 3)
+                    <a href="{{ route('usuarios.medico.misPacientes') }}"
+                        class="nav-link {{ request()->routeIs('usuarios.medico.*') ? 'nav-link-active' : '' }}"
+                        @if(request()->routeIs('usuarios.medico.*')) aria-current="page" @endif>Mis pacientes</a>
+                @endif
 
                 <span class="site-user">{{ Auth::user()->nombre }} {{ Auth::user()->apellidos }}</span>
                 <a href="{{ route('usuarios.logout') }}" class="nav-link nav-link-border">Cerrar sesión</a>

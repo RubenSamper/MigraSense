@@ -3,27 +3,27 @@
 namespace App\View\Components;
 
 use Illuminate\View\Component;
-use Illuminate\Support\Facades\DB;
+use App\Models\TipoMigranaCatalogo;
 
 class SelectTipoMigrana extends Component
 {
     public $listado;
     public $seleccionado;
-
-    public $iconos = \App\Support\MigranaVisual::ICONOS;
+    public $iconos;
 
     public function __construct($seleccionado = null)
     {
         $this->seleccionado = $seleccionado;
 
-        $columna = DB::selectOne(
-            "SHOW COLUMNS FROM `migranas` WHERE Field = 'tipo_migrana'"
-        );
-        $tipo = $columna->Type ?? '';
+        // Antes la lista salía de leer el ENUM de la columna `tipo_migrana`
+        // directamente de la base de datos (SHOW COLUMNS); ahora que esa
+        // columna es texto normal enlazado a su propia tabla, la lista (y
+        // los iconos, que antes venían de MigranaVisual::ICONOS) salen del
+        // catálogo. Añadir o quitar un tipo es solo una fila en esa tabla.
+        $tipos = TipoMigranaCatalogo::orderBy('orden')->get();
 
-        $this->listado = str_starts_with($tipo, 'enum(')
-            ? str_getcsv(substr($tipo, 5, -1), ',', "'")
-            : [];
+        $this->listado = $tipos->pluck('clave')->all();
+        $this->iconos = $tipos->pluck('icono', 'clave')->all();
     }
 
     public function render()

@@ -35,6 +35,12 @@
     }
     .followup-header h1 { margin: 0; font-size: clamp(1.9rem, 4vw, 2.7rem); }
     .followup-header p { margin: 10px 0 0; color: var(--muted); }
+    .followup-header-acciones {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        flex-shrink: 0;
+    }
     .followup-button {
         display: inline-flex;
         align-items: center;
@@ -47,6 +53,12 @@
         font-weight: 700;
         white-space: nowrap;
     }
+    .followup-button-secundario {
+        background: var(--surface);
+        color: var(--accent);
+        border: 1px solid var(--accent);
+    }
+    .followup-button-secundario:hover { background: var(--soft); }
 
     /* Selector de mes */
     .month-switcher {
@@ -203,14 +215,20 @@
     .migraine-days {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(285px, 1fr));
-        gap: 16px;
+        gap: 26px;
     }
     .migraine-card {
         padding: 20px;
         border: 1px solid var(--line);
         border-radius: 12px;
         background: var(--surface);
-        box-shadow: 0 8px 22px rgba(23, 48, 66, .06);
+        box-shadow: 0 10px 26px rgba(23, 48, 66, .13);
+        transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
+    }
+    .migraine-card:hover {
+        transform: translateY(-3px);
+        border-color: var(--accent);
+        box-shadow: 0 16px 34px rgba(23, 48, 66, .2);
     }
     .migraine-card-date { margin: 0; color: var(--accent); font-size: 1.05rem; text-transform: capitalize; }
     .migraine-card-count { margin: 5px 0 16px; color: var(--muted); font-size: .85rem; }
@@ -258,6 +276,64 @@
     .migraine-more-info summary { cursor: pointer; font-weight: 700; }
     .migraine-more-info summary::marker { color: var(--accent); }
     .migraine-more-info[open] summary { margin-bottom: 10px; }
+    .migraine-diagnostico {
+        margin-top: 10px;
+        padding: 10px 12px;
+        border-left: 3px solid var(--accent);
+        border-radius: 0 8px 8px 0;
+        background: #eef6f9;
+    }
+    .migraine-diagnostico summary {
+        cursor: pointer;
+        color: var(--accent);
+        font-size: .78rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .04em;
+    }
+    .migraine-diagnostico summary::marker { color: var(--accent); }
+    .migraine-diagnostico[open] summary { margin-bottom: 8px; }
+    .migraine-diagnostico p { margin: 0; color: var(--ink); font-size: .9rem; white-space: pre-line; }
+    /* Episodio con un diagnóstico que todavía no se había visto antes de
+       cargar esta página: una franja de color a la izquierda para que
+       resalte dentro de la tarjeta del día, sin tener que abrir nada. */
+    .migraine-episode-sin-leer {
+        margin: 0 -14px;
+        padding-left: 14px;
+        padding-right: 14px;
+        border-left: 3px solid #f2994a;
+        background: #fff8f1;
+        border-radius: 0 8px 8px 0;
+    }
+    .etiqueta-nuevo {
+        display: inline-block;
+        margin-left: 8px;
+        padding: 2px 7px;
+        border-radius: 999px;
+        background: #f2994a;
+        color: #fff;
+        font-size: .68rem;
+        font-weight: 800;
+        letter-spacing: .03em;
+        text-transform: uppercase;
+        vertical-align: middle;
+    }
+    .contador-sin-leer-tab {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 19px;
+        height: 19px;
+        margin-left: 6px;
+        padding: 0 5px;
+        border-radius: 999px;
+        background: #e15b45;
+        color: #fff;
+        font-size: .72rem;
+        font-weight: 700;
+        line-height: 1;
+        vertical-align: middle;
+    }
     .empty-followup { padding: 30px; border: 1px dashed #b9cdd4; border-radius: 10px; color: var(--muted); text-align: center; }
     .followup-success {
         margin: 0 0 20px;
@@ -271,7 +347,7 @@
     @media (max-width: 700px) {
         .migraine-followup { padding: 28px 16px 40px; }
         .followup-header { display: block; }
-        .followup-button { margin-top: 18px; }
+        .followup-header-acciones { margin-top: 18px; }
         .month-switcher-main { gap: 10px; }
         .month-switcher-label { min-width: 0; font-size: 1rem; }
         .month-select-form { justify-content: center; }
@@ -450,18 +526,42 @@
             });
         });
 
-        const params = new URLSearchParams(window.location.search);
+        // Pestañas del historial: "Todos" / "Diagnósticos sin leer". Es un
+        // filtro simple en el propio navegador (los episodios ya están
+        // todos renderizados), no hace falta recargar la página.
+        const tabsHistorial = Array.from(document.querySelectorAll('.historial-tab'));
+        const diasHistorial = Array.from(document.querySelectorAll('.migraine-card'));
+        const avisoSinResultados = document.getElementById('historial-sin-leer-vacio');
 
-        if (params.get('registrado') === '1') {
-            const banner = document.createElement('div');
-            banner.className = 'followup-success';
-            banner.textContent = 'Migraña registrada correctamente.';
-            document.querySelector('.migraine-followup').prepend(banner);
+        function aplicarFiltroHistorial(soloSinLeer) {
+            let algunDiaVisible = false;
 
-            params.delete('registrado');
-            const nuevaUrl = window.location.pathname + (params.toString() ? '?' + params.toString() : '');
-            window.history.replaceState({}, '', nuevaUrl);
+            diasHistorial.forEach((dia) => {
+                const episodios = Array.from(dia.querySelectorAll('.migraine-episode'));
+                let algunEpisodioVisible = false;
+
+                episodios.forEach((episodio) => {
+                    const esSinLeer = episodio.dataset.diagnosticoSinLeer === '1';
+                    const visible = !soloSinLeer || esSinLeer;
+                    episodio.style.display = visible ? '' : 'none';
+                    if (visible) algunEpisodioVisible = true;
+                });
+
+                dia.style.display = algunEpisodioVisible ? '' : 'none';
+                if (algunEpisodioVisible) algunDiaVisible = true;
+            });
+
+            if (avisoSinResultados) {
+                avisoSinResultados.hidden = !soloSinLeer || algunDiaVisible;
+            }
         }
+
+        tabsHistorial.forEach((tab) => {
+            tab.addEventListener('click', () => {
+                tabsHistorial.forEach((t) => t.setAttribute('aria-selected', t === tab ? 'true' : 'false'));
+                aplicarFiltroHistorial(tab.id === 'tab-historial-sin-leer');
+            });
+        });
     });
 </script>
 @endsection
@@ -473,7 +573,10 @@
             <h1>Seguimiento de migraña</h1>
             <p>Revisa tus episodios y observa cómo evoluciona su frecuencia.</p>
         </div>
-        <a class="followup-button" href="{{ route('usuarios.registrarMigrana', ['mes' => $mesSeleccionado]) }}">+ Registrar nueva migraña</a>
+        <div class="followup-header-acciones">
+            <a class="followup-button" href="{{ route('usuarios.registrarMigrana', ['mes' => $mesSeleccionado]) }}">+ Registrar nueva migraña</a>
+            <a class="followup-button followup-button-secundario" href="{{ route('usuarios.seguimientoMigrana.pdf', ['mes' => $mesSeleccionado]) }}">Descargar PDF</a>
+        </div>
     </header>
 
     <nav class="month-switcher" aria-label="Navegación por mes">
@@ -540,8 +643,21 @@
 
     <section aria-label="Historial de migrañas">
         <div class="followup-panel">
-            <h2>Historial por días</h2>
-            <p>Tus registros de {{ $etiquetaMesSeleccionado }} aparecen ordenados cronológicamente, agrupados por el día en que comenzaron.</p>
+            <div class="chart-panel-head">
+                <div>
+                    <h2>Historial por días</h2>
+                    <p>Tus registros de {{ $etiquetaMesSeleccionado }} aparecen ordenados cronológicamente, agrupados por el día en que comenzaron.</p>
+                </div>
+                <div class="chart-tabs" role="tablist" aria-label="Filtro del historial">
+                    <button type="button" id="tab-historial-todos" class="chart-tab historial-tab" role="tab" aria-selected="true" tabindex="0">Todos</button>
+                    <button type="button" id="tab-historial-sin-leer" class="chart-tab historial-tab" role="tab" aria-selected="false" tabindex="-1">
+                        Diagnósticos sin leer
+                        @if (count($diagnosticosSinLeerIds) > 0)
+                            <span class="contador-sin-leer-tab">{{ count($diagnosticosSinLeerIds) }}</span>
+                        @endif
+                    </button>
+                </div>
+            </div>
 
             @if ($diasMigrana->isNotEmpty())
                 <div class="migraine-days">
@@ -557,8 +673,9 @@
                                         ? \Carbon\Carbon::parse($episodio->hora_termina)->toDateString()
                                         : $fechaInicioEpisodio;
                                     $esMultidia = $fechaFinEpisodio !== $fechaInicioEpisodio;
+                                    $diagnosticoSinLeer = in_array($episodio->id, $diagnosticosSinLeerIds, true);
                                 @endphp
-                                <div class="migraine-episode">
+                                <div class="migraine-episode @if ($diagnosticoSinLeer) migraine-episode-sin-leer @endif" data-diagnostico-sin-leer="{{ $diagnosticoSinLeer ? '1' : '0' }}">
                                     <div class="migraine-episode-header">
                                         <strong>{{ \Carbon\Carbon::parse($episodio->hora_inicio)->format('H:i') }} - {{ $episodio->hora_termina ? \Carbon\Carbon::parse($episodio->hora_termina)->format('H:i') : 'Sin hora de fin' }}</strong>
                                         <form class="migraine-delete-form" method="POST" action="{{ route('usuarios.eliminarMigrana', $episodio->id) }}" onsubmit="return confirm('¿Quieres eliminar este registro de migraña?');">
@@ -572,6 +689,7 @@
                                                     <path d="M14 11v6"></path>
                                                     <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path>
                                                 </svg>
+                                                Eliminar
                                             </button>
                                         </form>
                                     </div>
@@ -582,22 +700,29 @@
                                         <span class="migraine-tag">{{ \App\Support\MigranaVisual::icono($episodio->tipo_migrana) }} {{ \App\Support\MigranaVisual::etiquetaTipo($episodio->tipo_migrana) }}</span>
                                         <span class="migraine-tag migraine-tag-stars" title="Intensidad: {{ ucfirst($episodio->intensidad) }}">{{ \App\Support\MigranaVisual::estrellas($episodio->intensidad) }}</span>
                                     </div>
+                                    @if (filled($episodio->notas))
+                                        <details class="migraine-more-info">
+                                            <summary>Hay más información. Haz clic para verla.</summary>
+                                            <p class="migraine-notes">{{ $episodio->notas }}</p>
+                                        </details>
+                                    @endif
+                                    @if (filled($episodio->diagnostico))
+                                        <details class="migraine-diagnostico" @if ($diagnosticoSinLeer) open @endif>
+                                            <summary>
+                                                Diagnóstico del médico
+                                                @if ($diagnosticoSinLeer)
+                                                    <span class="etiqueta-nuevo">Nuevo</span>
+                                                @endif
+                                            </summary>
+                                            <p>{{ $episodio->diagnostico }}</p>
+                                        </details>
+                                    @endif
                                 </div>
                             @endforeach
-
-                            @if ($episodios->contains(fn ($episodio) => filled($episodio->notas)))
-                                <details class="migraine-more-info">
-                                    <summary>Hay más información. Haz clic para verla.</summary>
-                                    @foreach ($episodios as $episodioConNotas)
-                                        @if (filled($episodioConNotas->notas))
-                                            <p class="migraine-notes"><strong>{{ \Carbon\Carbon::parse($episodioConNotas->hora_inicio)->format('H:i') }}</strong>: {{ $episodioConNotas->notas }}</p>
-                                        @endif
-                                    @endforeach
-                                </details>
-                            @endif
                         </article>
                     @endforeach
                 </div>
+                <p id="historial-sin-leer-vacio" class="empty-followup" hidden>No tienes diagnósticos nuevos por leer en {{ $etiquetaMesSeleccionado }}.</p>
             @elseif ($todasLasMigranas->isNotEmpty())
                 <div class="empty-followup">No has registrado migrañas en {{ $etiquetaMesSeleccionado }}. Usa el selector de arriba para ver otro mes.</div>
             @else

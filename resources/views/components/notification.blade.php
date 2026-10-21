@@ -1,6 +1,7 @@
 @props([
     'type' => 'info',
     'message' => null,
+    'duration' => 4,
 ])
 
 @if ($message)
@@ -14,7 +15,7 @@
         $style = $styles[$type] ?? $styles['info'];
     @endphp
 
-    <div class="notification-item">
+    <div class="notification-item" style="animation-duration: {{ (float) $duration }}s;">
         <div class="notification {{ $style['class'] }}" role="{{ $style['role'] }}" aria-live="polite">
             <div class="notification-mark" aria-hidden="true">{{ $type === 'success' ? '✓' : ($type === 'error' ? '!' : 'i') }}</div>
             <div class="notification-content">

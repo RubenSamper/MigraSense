@@ -1,6 +1,6 @@
 @extends("layouts.default")
 
-@section('title', 'Usuarios')
+@section('title', 'Pacientes')
 
 @section('scripts')
     <style>
@@ -393,10 +393,10 @@
                             var acciones = '<div class="acciones-usuario">';
 
                             if (row.puede_editar) {
-                                acciones += '<a href="' + editBaseUrl.replace(':id', row.id) + '" class="icon-button icon-button-editar" title="Editar usuario" aria-label="Editar usuario ' + row.nombre + '">✏️</a>';
+                                acciones += '<a href="' + editBaseUrl.replace(':id', row.id) + '" class="icon-button icon-button-editar" title="Editar paciente" aria-label="Editar paciente ' + row.nombre + '">✏️</a>';
                             }
                             if (row.puede_eliminar) {
-                                acciones += '<button type="button" data-row="' + meta.row + '" class="icon-button icon-button-eliminar" title="Eliminar usuario" aria-label="Eliminar usuario ' + row.nombre + '">🗑️</button>';
+                                acciones += '<button type="button" data-row="' + meta.row + '" class="icon-button icon-button-eliminar" title="Eliminar paciente" aria-label="Eliminar paciente ' + row.nombre + '">🗑️</button>';
                             }
                             if (!row.puede_editar && !row.puede_eliminar) {
                                 acciones += '<span class="sin-permisos">Sin permisos</span>';
@@ -446,7 +446,7 @@
             });
 
             $('#listadoUsuario tbody').on('click', 'tr .icon-button-eliminar', function () {
-                var confirmacion = window.confirm('Va a eliminar este usuario. ¿Desea continuar?')
+                var confirmacion = window.confirm('Va a eliminar este paciente. ¿Desea continuar?')
 
                 var dataRow = $(this).attr('data-row')
                 var row = table.data()[dataRow];
@@ -461,7 +461,7 @@
                         },
                         success: function (response) {
                             table.ajax.reload();
-                            mostrarNotificacion('success', (response && response.message) || 'Usuario eliminado correctamente.');
+                            mostrarNotificacion('success', (response && response.message) || 'Paciente eliminado correctamente.');
                         },
                         error: function (response) {
                             console.error("Error", response);
@@ -478,7 +478,7 @@
     <div class="listado-usuarios">
         <div class="listado-usuarios-header">
             <p class="kicker">Administración</p>
-            <h2>Usuarios registrados</h2>
+            <h2>Pacientes registrados</h2>
         </div>
         <div class="listado-usuarios-panel">
             <table id="listadoUsuario" class="display">

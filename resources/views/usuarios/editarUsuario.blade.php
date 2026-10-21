@@ -202,9 +202,7 @@
             <label for="rol_id">Rol</label>
             <select id="rol_id" name="rol_id">
                 @foreach($roles as $rol)
-                    @if((int) $rol->id !== 3)
-                        <option value="{{ $rol->id }}" {{ old('rol_id', $usuario->rol_id) == $rol->id ? 'selected' : '' }}>{{ $rol->nombre }}</option>
-                    @endif
+                    <option value="{{ $rol->id }}" {{ old('rol_id', $usuario->rol_id) == $rol->id ? 'selected' : '' }}>{{ $rol->nombre }}</option>
                 @endforeach
             </select>
             @error('rol_id')
@@ -224,7 +222,7 @@
         </div>
         <div class="edit-actions">
             <button type="submit">Guardar cambios</button>
-            <a href="{{ route('usuarios.obtenerListadoUsuarios') }}" style="display:block; text-align:center; padding:12px; background:#888; color:white; text-decoration:none; border-radius:5px; font-weight:bold; flex:1;">Cancelar</a>
+            <a href="{{ route((int) $usuario->rol_id === 3 ? 'usuarios.listarMedicos' : 'usuarios.obtenerListadoUsuarios') }}" style="display:block; text-align:center; padding:12px; background:#888; color:white; text-decoration:none; border-radius:5px; font-weight:bold; flex:1;">Cancelar</a>
         </div>
     </form>
 </div>

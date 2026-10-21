@@ -20,8 +20,21 @@ class TipoMigrana extends Model
         'hora_inicio',
         'hora_termina',
         'intensidad',
-        'sintomas',
-        'datos_extra',
         'notas',
+        'diagnostico',
+        'leido_por_medico',
+        'diagnostico_visto',
     ];
+
+    protected $casts = [
+        'leido_por_medico' => 'boolean',
+        'diagnostico_visto' => 'boolean',
+    ];
+
+    // El tipo de migraña de este episodio, ya como registro del catálogo
+    // (tabla tipos_migrana) en vez de un simple texto suelto.
+    public function tipoMigranaCatalogo()
+    {
+        return $this->belongsTo(TipoMigranaCatalogo::class, 'tipo_migrana', 'clave');
+    }
 }

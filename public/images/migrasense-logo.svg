@@ -4,5 +4,5 @@
     <path fill="none" stroke="#ffffff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" d="M38 92 L58 92 L66 72 L76 110 L84 92 L102 92"/>
     <circle cx="102" cy="92" r="5" fill="#ffffff"/>
   </g>
-  <text x="198" y="118" font-family="Georgia, 'Times New Roman', serif" font-size="50" font-weight="700" letter-spacing="-0.5" fill="#173042" stroke="#ffffff" stroke-width="6" stroke-linejoin="round" paint-order="stroke fill">Migra<tspan fill="#006994">Sense</tspan></text>
+  <text x="198" y="135" font-family="Georgia, 'Times New Roman', serif" font-size="50" font-weight="700" letter-spacing="-0.5" fill="#173042" stroke="#ffffff" stroke-width="6" stroke-linejoin="round" paint-order="stroke fill">Migra<tspan fill="#006994">Sense</tspan></text>
 </svg>

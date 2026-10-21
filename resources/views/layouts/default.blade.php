@@ -103,6 +103,11 @@
         @foreach (['success', 'error', 'warning', 'info'] as $tipo)
             <x-notification :type="$tipo" :message="session($tipo)" />
         @endforeach
+        {{-- Aviso de "tienes un diagnóstico nuevo del médico" (ver
+             UsuariosController::validarLogin()): se queda un poco más de
+             tiempo en pantalla que el resto de avisos, porque es un mensaje
+             más largo y más importante de no perderse de un vistazo. --}}
+        <x-notification type="info" :message="session('diagnostico_nuevo')" :duration="9" />
     </div>
 
     <style>

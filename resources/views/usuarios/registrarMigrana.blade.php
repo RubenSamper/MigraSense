@@ -175,7 +175,7 @@
                     type: 'POST',
                     data: $(form).serialize(),
                     success: function () {
-                        window.location.href = "{{ route('usuarios.seguimientoMigrana') }}?registrado=1";
+                        window.location.href = "{{ route('usuarios.seguimientoMigrana') }}";
                     },
                     error: function (xhr) {
                         if (xhr.responseJSON && xhr.responseJSON.errors) {
@@ -201,7 +201,7 @@
             @csrf
 
             <div class="migraine-section">
-                <x-select-tipo-migrana />
+                <x-select-tipo-migrana :seleccionado="old('tipo_migrana')" />
                 <p class="field-error" id="error_tipo_migrana"></p>
             </div>
 

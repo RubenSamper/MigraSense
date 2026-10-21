@@ -1,5 +1,5 @@
 @extends("layouts.default")
-@section('title', 'Dashboard')
+@section('title', 'Inicio')
 @section('scripts')
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
@@ -45,7 +45,7 @@
             display: flex;
             align-items: center;
             gap: 24px;
-            margin-bottom: 24px;
+            margin-bottom: 28px;
             padding: 28px;
             border-radius: 16px;
             border: 1px solid var(--line);
@@ -92,25 +92,25 @@
             display: grid;
             grid-template-columns: repeat(2, minmax(0, 1fr));
             gap: 1px;
-            margin-bottom: 24px;
+            margin-bottom: 28px;
             overflow: hidden;
             border-radius: 12px;
             background: var(--line);
         }
 
         .weather-stat {
-            padding: 20px 22px;
+            padding: 24px 22px 18px;
             background: var(--surface);
         }
 
         .weather-stat-label {
             color: var(--muted);
-            font-size: 0.82rem;
+            font-size: 0.8rem;
         }
 
         .weather-stat-value {
-            margin-top: 5px;
-            font-size: 1.9rem;
+            margin-top: 6px;
+            font-size: 2.1rem;
             font-weight: 800;
         }
 
@@ -122,23 +122,54 @@
             color: var(--accent);
         }
 
+        /* Pie de la sección: nombre de la estación (y "estimado" si aplica),
+           una sola vez para las dos cifras en vez de repetido en cada una. */
+        .weather-stat-footer {
+            grid-column: 1 / -1;
+            padding: 10px 22px;
+            background: var(--surface);
+            border-top: 1px solid var(--line);
+            color: var(--muted);
+            font-size: 0.75rem;
+        }
+
         .weather-chart-panel {
-            padding: 22px;
+            padding: 24px;
             border-radius: 12px;
             background: var(--surface);
             border: 1px solid var(--line);
-            box-shadow: 0 12px 30px rgba(23, 48, 66, 0.07);
-            margin-bottom: 24px;
+            box-shadow: 0 10px 24px rgba(23, 48, 66, 0.06);
+            margin-bottom: 28px;
         }
 
-        .weather-chart-panel h3 {
-            margin: 0 0 4px;
+        .weather-chart-title {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+        }
+
+        .weather-chart-title h3 {
+            margin: 0;
             font-size: 1.1rem;
         }
 
-        .weather-chart-panel span {
+        /* Icono "ⓘ" con el texto largo de la leyenda en un tooltip, en vez
+           de tenerlo siempre escrito debajo del título. */
+        .info-tooltip {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 18px;
+            height: 18px;
             color: var(--muted);
-            font-size: 0.85rem;
+            font-size: 1rem;
+            line-height: 1;
+            cursor: help;
+        }
+
+        .info-tooltip:hover,
+        .info-tooltip:focus-visible {
+            color: var(--accent);
         }
 
         .weather-chart {
@@ -337,44 +368,113 @@
 
         @if ($datosClima)
             const observaciones = @json($datosClima['observaciones']);
+            const previsionTemperatura = @json($datosClima['prevision_temperatura'] ?? []);
+            const previsionPresion = @json($datosClima['prevision_presion'] ?? []);
         @endif
 
         $(function () {
             @if ($datosClima)
+                // Horas con datos reales (ya pasadas) + horas con previsión (resto del día).
+                const horasReales = observaciones.map((obs) => obs.hora);
+                const horasPrevistas = Array.from(new Set([
+                    ...previsionTemperatura.map((p) => p.hora),
+                    ...previsionPresion.map((p) => p.hora)
+                ])).sort();
+                const labels = horasReales.concat(horasPrevistas);
+
+                // Serie de datos reales: se rellena con null en las horas de
+                // previsión para que esa parte de la línea no se dibuje.
+                const temperaturaReal = observaciones.map((obs) => obs.temperatura)
+                    .concat(horasPrevistas.map(() => null));
+                const presionReal = observaciones.map((obs) => obs.presion)
+                    .concat(horasPrevistas.map(() => null));
+
+                // Serie de previsión: null durante las horas reales, salvo en el
+                // último punto real (se repite ahí) para que la línea discontinua
+                // arranque justo donde termina la línea de datos reales, sin salto.
+                const ultimaTemperaturaReal = observaciones.length ? observaciones[observaciones.length - 1].temperatura : null;
+                const ultimaPresionReal = observaciones.length ? observaciones[observaciones.length - 1].presion : null;
+
+                function mapaPorHora(lista) {
+                    const mapa = {};
+                    lista.forEach((p) => { mapa[p.hora] = p.valor; });
+                    return mapa;
+                }
+                const mapaTemperaturaPrevista = mapaPorHora(previsionTemperatura);
+                const mapaPresionPrevista = mapaPorHora(previsionPresion);
+
+                const temperaturaPrevista = horasReales.map((_, i) => i === horasReales.length - 1 ? ultimaTemperaturaReal : null)
+                    .concat(horasPrevistas.map((h) => mapaTemperaturaPrevista[h] ?? null));
+                const presionPrevista = horasReales.map((_, i) => i === horasReales.length - 1 ? ultimaPresionReal : null)
+                    .concat(horasPrevistas.map((h) => mapaPresionPrevista[h] ?? null));
+
                 new Chart(document.getElementById('chart'), {
                     type: 'line',
                     data: {
-                        labels: observaciones.map((obs) => obs.hora),
+                        labels: labels,
                         datasets: [{
-                            label: 'Temperatura (°C)',
-                            data: observaciones.map((obs) => obs.temperatura),
+                            label: 'Temperatura',
+                            data: temperaturaReal,
                             borderColor: '#e74c3c',
                             backgroundColor: 'rgba(231, 76, 60, 0.12)',
                             tension: 0.3,
                             fill: true,
+                            spanGaps: false,
                             yAxisID: 'temperatura'
                         }, {
-                            label: 'Presión (hPa)',
-                            data: observaciones.map((obs) => obs.presion),
+                            label: 'Temperatura (previsión)',
+                            data: temperaturaPrevista,
+                            borderColor: '#e74c3c',
+                            backgroundColor: 'transparent',
+                            borderDash: [6, 4],
+                            tension: 0.3,
+                            fill: false,
+                            pointRadius: 2,
+                            spanGaps: true,
+                            yAxisID: 'temperatura'
+                        }, {
+                            label: 'Presión',
+                            data: presionReal,
                             borderColor: '#006994',
                             backgroundColor: 'rgba(0, 105, 148, 0.1)',
                             tension: 0.3,
                             fill: true,
+                            spanGaps: false,
+                            yAxisID: 'presion'
+                        }, {
+                            label: 'Presión (estimada)',
+                            data: presionPrevista,
+                            borderColor: '#006994',
+                            backgroundColor: 'transparent',
+                            borderDash: [6, 4],
+                            tension: 0.3,
+                            fill: false,
+                            pointRadius: 2,
+                            spanGaps: true,
                             yAxisID: 'presion'
                         }]
                     },
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
+                        // Sin números en los ejes: el valor exacto de cada
+                        // hora se ve al pasar el ratón (tooltip), así el
+                        // gráfico queda más limpio y menos "numerado".
                         interaction: { mode: 'index', intersect: false },
                         scales: {
+                            x: {
+                                ticks: { maxTicksLimit: 8 }
+                            },
                             temperatura: {
                                 position: 'left',
-                                title: { display: true, text: 'Temperatura (°C)' }
+                                title: { display: true, text: 'Temperatura (°C)' },
+                                ticks: { display: false },
+                                grid: { drawOnChartArea: false }
                             },
                             presion: {
                                 position: 'right',
                                 title: { display: true, text: 'Presión (hPa)' },
+                                ticks: { display: false },
                                 grid: { drawOnChartArea: false }
                             }
                         }
@@ -537,26 +637,31 @@
                         <h3>Sin datos suficientes</h3>
                         <p>No hemos podido calcular tu riesgo con los datos disponibles ahora mismo.</p>
                     @endif
-                    @if ($riesgo['variacion_hpa'] !== null)
-                        <p>Variación detectada: {{ $riesgo['variacion_hpa'] }} hPa</p>
-                    @endif
                 </div>
             </section>
 
             <section class="weather-current">
                 <div class="weather-stat">
-                    <div class="weather-stat-label">Temperatura actual · {{ $datosClima['estacion_nombre'] }}</div>
+                    <div class="weather-stat-label">Temperatura actual</div>
                     <div class="weather-stat-value temperature">{{ $datosClima['temperatura_actual'] }}°C</div>
                 </div>
                 <div class="weather-stat">
-                    <div class="weather-stat-label">Presión atmosférica actual</div>
+                    <div class="weather-stat-label">Presión actual</div>
                     <div class="weather-stat-value pressure">{{ $datosClima['presion_actual'] }} hPa</div>
+                </div>
+                <div class="weather-stat-footer">
+                    {{ $datosClima['estacion_nombre'] }}
+                    @if ($datosClima['actual_es_estimado'] ?? false)
+                        · estimado para esta hora
+                    @endif
                 </div>
             </section>
 
             <section class="weather-chart-panel">
-                <h3>Evolución de hoy</h3>
-                <span>Temperatura y presión atmosférica</span>
+                <div class="weather-chart-title">
+                    <h3>Evolución de hoy</h3>
+                    <span class="info-tooltip" tabindex="0" title="La línea discontinua es la previsión para el resto del día: la temperatura es el dato oficial de AEMET; la presión es una estimación propia de MigraSense (no es un dato oficial).">&#9432;</span>
+                </div>
                 <div class="weather-chart"><canvas id="chart"></canvas></div>
             </section>
         @endif
