@@ -442,6 +442,20 @@ class UsuariosController extends Controller
             }
         }
 
+        // El semáforo solo tiene 3 niveles reales (verde/amarillo/rojo); si
+        // hoy no se ha podido calcular (sin estación, sin observaciones, o
+        // menos de 2 lecturas de presión), mostramos el último nivel que sí
+        // se calculó con datos reales, en vez de un cuarto estado "sin
+        // datos". No se reescribe en el historial: ese sigue guardando solo
+        // niveles calculados de verdad para el día de hoy.
+        if ($riesgo['nivel'] === 'desconocido') {
+            $ultimoHistorial = \App\Models\HistorialRiesgo::where('usuario_id', $usuario->id)
+                ->orderByDesc('fecha')
+                ->first();
+
+            $riesgo['nivel'] = $ultimoHistorial->nivel ?? 'verde';
+        }
+
         return view('usuarios.dashboard', compact('riesgo', 'datosClima'));
     }
     public function login()
@@ -578,9 +592,16 @@ class UsuariosController extends Controller
         $usuario->sensibilidad_presion = $request->sensibilidad_presion;
         $usuario->save();
 
-        return redirect()
-            ->route('usuarios.configuracion')
-            ->with('success', 'Configuración guardada correctamente.');
+        // Esto lo llama un $.ajax, no un submit normal: si devolviéramos un
+        // redirect(), el propio XHR lo seguiría automáticamente como una
+        // petición más, lo que consumiría el flash de sesión antes de que
+        // el JS navegue de verdad al dashboard, y la notificación no
+        // llegaría a verse. Por eso aquí solo flasheamos el mensaje y
+        // devolvemos JSON; la navegación real al dashboard la hace el JS
+        // en el success.
+        session()->flash('success', 'Configuración guardada correctamente.');
+
+        return response()->json(['success' => true]);
     }
 
     public function estacionesAemetDisponibles()

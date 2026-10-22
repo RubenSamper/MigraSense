@@ -205,7 +205,13 @@ class AemetService
         $distanciaMinima = null;
 
         foreach ($observaciones as $obs) {
-            if (!isset($obs['lat'], $obs['lon'])) {
+            // Algunas estaciones automáticas de AEMET no miden presión
+            // atmosférica (solo temperatura, humedad, viento...). Como la
+            // presión es el dato clave de toda la app (semáforo de riesgo,
+            // gráfica, "Presión actual"), descartamos aquí cualquier
+            // estación que no la reporte, aunque sea la más cercana en
+            // distancia pura.
+            if (!isset($obs['lat'], $obs['lon'], $obs['pres_nmar'])) {
                 continue;
             }
 

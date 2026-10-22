@@ -324,7 +324,7 @@
                     sensibilidad_presion: sensibilidad
                 },
                 success: function () {
-                    $('#configStatus').text('Configuración guardada correctamente.');
+                    window.location.href = "{{ route('usuarios.dashboard') }}";
                 },
                 error: function () {
                     $('#configStatus').text('No se pudo guardar la configuración. Inténtalo de nuevo.');

@@ -31,6 +31,7 @@
             overflow-x: hidden;
             display: flex;
             flex-direction: column;
+            background-color: #ffffff;
         }
 
         img,

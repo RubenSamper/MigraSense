@@ -554,7 +554,6 @@
             }
 
             if (paramsDashboard.get('registrado') === '1') {
-                mostrarNotificacionExito('Migraña registrada correctamente.');
                 paramsDashboard.delete('registrado');
             }
 
@@ -614,13 +613,6 @@
                             <circle cx="66" cy="42" r="6" fill="#173042" />
                             <path d="M30 70 Q50 54 70 70" stroke="#173042" stroke-width="5" fill="none" stroke-linecap="round" />
                         </svg>
-                    @else
-                        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                            <circle cx="50" cy="50" r="46" fill="#dce7eb" />
-                            <circle cx="34" cy="42" r="6" fill="#647783" />
-                            <circle cx="66" cy="42" r="6" fill="#647783" />
-                            <line x1="32" y1="64" x2="68" y2="64" stroke="#647783" stroke-width="5" stroke-linecap="round" />
-                        </svg>
                     @endif
                 </div>
                 <div class="risk-text">
@@ -633,9 +625,6 @@
                     @elseif ($riesgo['nivel'] === 'rojo')
                         <h3>Riesgo alto</h3>
                         <p>Cambio fuerte de presión atmosférica. Es un desencadenante habitual de migraña.</p>
-                    @else
-                        <h3>Sin datos suficientes</h3>
-                        <p>No hemos podido calcular tu riesgo con los datos disponibles ahora mismo.</p>
                     @endif
                 </div>
             </section>
