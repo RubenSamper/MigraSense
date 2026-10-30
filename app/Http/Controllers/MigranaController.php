@@ -139,15 +139,21 @@ class MigranaController extends Controller
 
         $conteoResumen = [];
 
-        // Cada episodio pertenece al mes en el que empieza y se pinta
-        // completo, aunque termine en el mes siguiente.
-        foreach ($migranasDelMes as $migrana) {
+        // Se recorren todos los episodios para que uno que cruza de mes
+        // pinte sus días en cada mes que toca: octubre muestra hasta el 31
+        // y noviembre muestra desde el 1. Los días de otros meses se
+        // descartan para que cada mes enseñe solo los suyos.
+        foreach ($todasLasMigranas as $migrana) {
             $inicio = Carbon::parse($migrana->hora_inicio)->startOfDay();
             $fin = $migrana->hora_termina
                 ? Carbon::parse($migrana->hora_termina)->startOfDay()
                 : $inicio;
 
             foreach (CarbonPeriod::create($inicio, $fin) as $dia) {
+                if ($dia->format('Y-m') !== $mesSeleccionado) {
+                    continue;
+                }
+
                 $clave = $dia->format('Y-m-d');
                 $conteoResumen[$clave][$migrana->intensidad] = ($conteoResumen[$clave][$migrana->intensidad] ?? 0) + 1;
             }
