@@ -139,23 +139,15 @@ class MigranaController extends Controller
 
         $conteoResumen = [];
 
-        // Se recorren todas las migrañas (no solo las que empiezan en este
-        // mes) para que un episodio que cruza de mes también pinte sus días
-        // en el mes en el que termina. Los días de otros meses se descartan
-        // más abajo.
-        foreach ($todasLasMigranas as $migrana) {
+        // Cada episodio pertenece al mes en el que empieza y se pinta
+        // completo, aunque termine en el mes siguiente.
+        foreach ($migranasDelMes as $migrana) {
             $inicio = Carbon::parse($migrana->hora_inicio)->startOfDay();
             $fin = $migrana->hora_termina
                 ? Carbon::parse($migrana->hora_termina)->startOfDay()
                 : $inicio;
 
             foreach (CarbonPeriod::create($inicio, $fin) as $dia) {
-                // Si el episodio se alarga a otro mes, solo contamos los días
-                // que caen dentro del mes que se está mostrando.
-                if ($dia->format('Y-m') !== $mesSeleccionado) {
-                    continue;
-                }
-
                 $clave = $dia->format('Y-m-d');
                 $conteoResumen[$clave][$migrana->intensidad] = ($conteoResumen[$clave][$migrana->intensidad] ?? 0) + 1;
             }
