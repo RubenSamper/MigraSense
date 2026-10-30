@@ -261,7 +261,6 @@
                "auto" los anchos en píxeles que DataTables fija en línea,
                si no las tarjetas se quedan encajonadas en el ancho de
                escritorio. */
-            .listado-usuarios,
             .dataTables_wrapper,
             .listado-usuarios table,
             .listado-usuarios tbody,
@@ -269,6 +268,11 @@
             .listado-usuarios td {
                 width: auto !important;
                 max-width: 100% !important;
+            }
+
+            .listado-usuarios {
+                width: calc(100% - 32px);
+                max-width: 100%;
             }
 
             .dataTables_wrapper {
