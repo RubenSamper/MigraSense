@@ -344,7 +344,19 @@
         @media (max-width: 500px) {
             .migraine-modal-row {
                 flex-direction: column;
+                flex-wrap: nowrap;
+                gap: 16px;
             }
+
+            .migraine-modal-row>div {
+                flex: 0 0 auto;
+                min-width: 0;
+                width: 100%;
+            }
+        }
+
+        .migraine-modal .field-error:empty {
+            display: none;
         }
     </style>
     <script>
