@@ -627,7 +627,7 @@
         <p id="chart-por-tipo-desc" class="chart-panel-desc" hidden>Número de episodios de este mes, agrupados por tipo de migraña.</p>
 
         <div id="chart-panel" role="tabpanel" aria-labelledby="tab-intensidad" tabindex="0">
-            @if ($diasMigrana->isNotEmpty())
+            @if ($diasMigrana->isNotEmpty() || $resumenDias->isNotEmpty())
                 <div class="followup-chart" tabindex="0" aria-label="Gráfica de episodios. Si hay muchos días, desplázate en horizontal con las flechas o arrastrando.">
                     <div class="followup-chart-scroll" id="chart-scroll">
                         <canvas id="migraineChart"></canvas>
