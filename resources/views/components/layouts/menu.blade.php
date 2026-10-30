@@ -62,7 +62,15 @@
             <img src="{{ asset('images/migrasense-logo.svg') }}" alt=""
                 style="height: 80px; width: auto; vertical-align: middle; margin-right: 8px;">
         </a>
-        <div class="site-nav-links">
+
+        <button type="button" class="nav-toggle" id="nav-toggle" aria-label="Abrir menú"
+            aria-expanded="false" aria-controls="site-nav-links">
+            <span class="nav-toggle-bar"></span>
+            <span class="nav-toggle-bar"></span>
+            <span class="nav-toggle-bar"></span>
+        </button>
+
+        <div class="site-nav-links" id="site-nav-links">
             @auth
                 @if(Auth::user()->rol_id == 2)
                     <a href="{{ route('usuarios.dashboard') }}"
@@ -137,42 +145,115 @@
             font-size: .9em;
         }
 
+        /* Botón de hamburguesa: oculto en escritorio, visible solo en móvil */
+        .nav-toggle {
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 5px;
+            width: 46px;
+            height: 46px;
+            padding: 0;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            border-radius: 8px;
+            background: rgba(0, 52, 76, 0.28);
+            cursor: pointer;
+        }
+
+        .nav-toggle:focus-visible {
+            outline: 3px solid #ffd166;
+            outline-offset: 3px;
+        }
+
+        .nav-toggle-bar {
+            display: block;
+            width: 22px;
+            height: 2px;
+            border-radius: 2px;
+            background: white;
+            transition: transform 0.2s, opacity 0.2s;
+        }
+
+        /* Al abrir el menú, las tres rayas se convierten en una X */
+        .nav-toggle[aria-expanded="true"] .nav-toggle-bar:nth-child(1) {
+            transform: translateY(7px) rotate(45deg);
+        }
+
+        .nav-toggle[aria-expanded="true"] .nav-toggle-bar:nth-child(2) {
+            opacity: 0;
+        }
+
+        .nav-toggle[aria-expanded="true"] .nav-toggle-bar:nth-child(3) {
+            transform: translateY(-7px) rotate(-45deg);
+        }
+
         @media (max-width: 760px) {
             .site-nav {
-                align-items: stretch;
-                flex-direction: column;
+                flex-wrap: wrap;
                 gap: 10px;
             }
 
-            .site-brand {
-                text-align: center;
+            .site-brand img {
+                height: 56px !important;
             }
 
+            .nav-toggle {
+                display: flex;
+            }
+
+            /* El menú queda oculto hasta que se pulsa el botón */
             .site-nav-links {
-                justify-content: center;
+                display: none;
+                flex-direction: column;
+                align-items: stretch;
+                flex-basis: 100%;
+                gap: 8px;
+                padding-top: 6px;
+            }
+
+            .site-nav-links.is-open {
+                display: flex;
+            }
+
+            .site-nav-links .nav-link {
+                width: 100%;
+                text-align: center;
             }
 
             .site-user {
                 max-width: 100%;
-            }
-        }
-
-        @media (max-width: 430px) {
-            .site-nav-links {
-                display: grid;
-                grid-template-columns: repeat(2, minmax(0, 1fr));
-                width: 100%;
-            }
-
-            .site-nav-links .nav-link {
-                text-align: center;
-                padding: 9px 8px;
-            }
-
-            .site-user {
-                grid-column: 1 / -1;
                 text-align: center;
             }
         }
     </style>
+
+    <script>
+        (function () {
+            var boton = document.getElementById('nav-toggle');
+            var menu = document.getElementById('site-nav-links');
+            if (!boton || !menu) return;
+
+            function cerrar() {
+                menu.classList.remove('is-open');
+                boton.setAttribute('aria-expanded', 'false');
+                boton.setAttribute('aria-label', 'Abrir menú');
+            }
+
+            boton.addEventListener('click', function () {
+                var abierto = menu.classList.toggle('is-open');
+                boton.setAttribute('aria-expanded', abierto ? 'true' : 'false');
+                boton.setAttribute('aria-label', abierto ? 'Cerrar menú' : 'Abrir menú');
+            });
+
+            // Escape cierra el menú, y al volver a pantalla ancha se restablece
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape') cerrar();
+            });
+
+            window.addEventListener('resize', function () {
+                if (window.innerWidth > 760) cerrar();
+            });
+        })();
+    </script>
 </header>

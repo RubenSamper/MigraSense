@@ -234,7 +234,6 @@
                "tarjetas" abajo, hay que forzar esos anchos a auto con
                !important, si no cada tarjeta se queda encajonada en su ancho
                estrecho de escritorio y el contenido se ve cortado. */
-            .listado-usuarios,
             .dataTables_wrapper,
             .listado-usuarios table,
             .listado-usuarios tbody,
@@ -242,6 +241,10 @@
             .listado-usuarios td {
                 width: auto !important;
                 max-width: 100% !important;
+            }
+
+            .listado-usuarios {
+                width: calc(100% - 32px);
             }
 
             .dataTables_wrapper {
