@@ -75,7 +75,22 @@ class MigranaController extends Controller
         // Meses en los que el usuario tiene al menos un episodio registrado
         // (agrupamos por el mes en el que empezó cada episodio).
         $mesesConRegistros = $todasLasMigranas
-            ->map(fn ($migrana) => Carbon::parse($migrana->hora_inicio)->format('Y-m'))
+            ->flatMap(function ($migrana) {
+                $inicio = Carbon::parse($migrana->hora_inicio)->startOfMonth();
+                $fin = $migrana->hora_termina
+                    ? Carbon::parse($migrana->hora_termina)->startOfMonth()
+                    : $inicio->copy();
+
+                // Tope de seguridad por si una fecha de fin está mal escrita.
+                $fin = $fin->min($inicio->copy()->addMonths(12));
+
+                $meses = [];
+                foreach (CarbonPeriod::create($inicio, '1 month', $fin) as $mes) {
+                    $meses[] = $mes->format('Y-m');
+                }
+
+                return $meses;
+            })
             ->unique()
             ->sortDesc()
             ->values();
@@ -93,13 +108,15 @@ class MigranaController extends Controller
 
             // Bloqueamos los meses futuros también aquí, no solo ocultando el
             // botón en la vista: alguien podría escribir ?mes=2026-12 a mano.
-            if ($mesSeleccionado > $mesActual) {
+            // Solo se permite un mes futuro si algún episodio llega hasta él.
+            if ($mesSeleccionado > $mesActual && !$mesesConRegistros->contains($mesSeleccionado)) {
                 $mesSeleccionado = $mesActual;
             }
         } elseif ($mesesConRegistros->isNotEmpty()) {
             // Sin un mes concreto en la URL, abrimos directamente en el mes
             // más reciente que tenga registros.
-            $mesSeleccionado = $mesesConRegistros->first();
+            // (sin contar meses futuros a los que solo llega un episodio).
+            $mesSeleccionado = $mesesConRegistros->first(fn ($mes) => $mes <= $mesActual) ?? $mesActual;
         }
 
         // No limitamos lo lejos que se puede retroceder (para poder ir pasando a
@@ -107,7 +124,7 @@ class MigranaController extends Controller
         // más allá del mes actual.
         $cursorMes = Carbon::createFromFormat('Y-m-d', $mesSeleccionado . '-01');
         $mesAnterior = $cursorMes->copy()->subMonthNoOverflow()->format('Y-m');
-        $mesSiguiente = $mesSeleccionado < $mesActual
+        $mesSiguiente = $mesSeleccionado < max($mesActual, (string) $mesesConRegistros->max())
             ? $cursorMes->copy()->addMonthNoOverflow()->format('Y-m')
             : null;
 
