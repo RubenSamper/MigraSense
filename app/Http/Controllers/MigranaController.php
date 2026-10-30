@@ -139,7 +139,11 @@ class MigranaController extends Controller
 
         $conteoResumen = [];
 
-        foreach ($migranasDelMes as $migrana) {
+        // Se recorren todas las migrañas (no solo las que empiezan en este
+        // mes) para que un episodio que cruza de mes también pinte sus días
+        // en el mes en el que termina. Los días de otros meses se descartan
+        // más abajo.
+        foreach ($todasLasMigranas as $migrana) {
             $inicio = Carbon::parse($migrana->hora_inicio)->startOfDay();
             $fin = $migrana->hora_termina
                 ? Carbon::parse($migrana->hora_termina)->startOfDay()
