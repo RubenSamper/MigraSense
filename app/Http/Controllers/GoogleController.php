@@ -69,8 +69,14 @@ class GoogleController extends Controller
             $datos['id'] = (string) Str::uuid();
             $datos['correo'] = $usuarioGoogle->email;
             $datos['google_id'] = $usuarioGoogle->id;
-            $datos['password'] = Hash::make('1234');
+            // Contraseña aleatoria que nadie conoce: estas cuentas entran con Google.
+            $datos['password'] = Hash::make(Str::random(40));
             $datos['rol_id'] = 2;
+
+            // Los registros con Google no pasan por el formulario, así que no pueden
+            // elegir médico: se asigna uno al azar entre los que haya. Si no hay
+            // ninguno, queda sin médico (medico_id admite NULL).
+            $datos['medico_id'] = Usuario::where('rol_id', 3)->inRandomOrder()->value('id');
 
             // extraer nombre/apellidos desde los datos de Google
             if (!empty($usuarioGoogle->user['given_name'])) {
