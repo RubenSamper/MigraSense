@@ -353,6 +353,11 @@
             justify-content: center;
         }
 
+        /* Tipos de migraña siempre en 3 columnas (3 + 3) dentro del modal. */
+        .migraine-modal .tipo-migrana-grid {
+            grid-template-columns: repeat(3, 1fr);
+        }
+
         @media (max-width: 500px) {
             .migraine-modal-section {
                 padding: 16px;
