@@ -560,14 +560,12 @@ class UsuariosController extends Controller
             'nombre' => ['required', 'regex:/^[\pL\s]+$/u', 'max:255'],
             'apellidos' => ['required', 'regex:/^[\pL\s]+$/u', 'max:255'],
             'correo' => ['required', 'email', 'unique:usuarios,correo,' . $id . ',id'],
-            'rol_id' => ['required', 'exists:roles,id'],
             'password' => ['nullable', 'min:8'],
         ]);
 
         $usuario->nombre = $request->nombre;
         $usuario->apellidos = $request->apellidos;
         $usuario->correo = $request->correo;
-        $usuario->rol_id = $request->rol_id;
 
         if ($request->filled('password')) {
             $usuario->password = Hash::make($request->password);

@@ -199,17 +199,6 @@
             @enderror
         </div>
         <div style="margin-bottom: 20px;">
-            <label for="rol_id">Rol</label>
-            <select id="rol_id" name="rol_id">
-                @foreach($roles as $rol)
-                    <option value="{{ $rol->id }}" {{ old('rol_id', $usuario->rol_id) == $rol->id ? 'selected' : '' }}>{{ $rol->nombre }}</option>
-                @endforeach
-            </select>
-            @error('rol_id')
-            <div class="alerta">{{ $message }}</div>
-            @enderror
-        </div>
-        <div style="margin-bottom: 20px;">
             <label for="password">Nueva Contraseña <span style="font-weight:normal; color:#888;">(dejar en blanco para mantener)</span></label>
             <input type="password" onInput="validarPasswordUsuario()" id="password" name="password" placeholder="Mínimo 8 caracteres"/>
             <span id="passwordValido" class="valido" style="color:#00cc00; display:none;">✔ Contraseña válida</span>
