@@ -316,7 +316,8 @@
         <div class="medico-migranas-header">
             <p class="kicker">Área médica</p>
             <h2>{{ $paciente->nombre }} {{ $paciente->apellidos }}</h2>
-            <p class="correo">{{ $paciente->correo }}</p>
+            <p class="correo" style="margin-top: 10px;"><strong>Datos de contacto del paciente:</strong></p>
+            <p class="correo">Correo: <a href="mailto:{{ $paciente->correo }}" style="color: inherit;">{{ $paciente->correo }}</a></p>
             <p class="correo">Teléfono:
                 @if ($paciente->telefono)
                     <a href="tel:{{ $paciente->telefono }}" style="color: inherit;">{{ $paciente->telefono }}</a>
