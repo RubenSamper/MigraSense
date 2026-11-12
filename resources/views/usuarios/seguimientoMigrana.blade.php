@@ -677,7 +677,7 @@
                                 @endphp
                                 <div class="migraine-episode @if ($diagnosticoSinLeer) migraine-episode-sin-leer @endif" data-diagnostico-sin-leer="{{ $diagnosticoSinLeer ? '1' : '0' }}">
                                     <div class="migraine-episode-header">
-                                        <strong>{{ \Carbon\Carbon::parse($episodio->hora_inicio)->format('H:i') }} - {{ $episodio->hora_termina ? \Carbon\Carbon::parse($episodio->hora_termina)->format('H:i') : 'Sin hora de fin' }}</strong>
+                                        <strong><span style="display:block;font-size:0.8em;margin-bottom:2px;">{{ \Carbon\Carbon::parse($fechaInicioEpisodio)->format('d/m/Y') }}@if ($fechaFinEpisodio !== $fechaInicioEpisodio) - {{ \Carbon\Carbon::parse($fechaFinEpisodio)->format('d/m/Y') }}@endif</span>{{ \Carbon\Carbon::parse($episodio->hora_inicio)->format('H:i') }} - {{ $episodio->hora_termina ? \Carbon\Carbon::parse($episodio->hora_termina)->format('H:i') : 'Sin hora de fin' }}</strong>
                                         <form class="migraine-delete-form" method="POST" action="{{ route('usuarios.eliminarMigrana', $episodio->id) }}" onsubmit="return confirm('¿Quieres eliminar este registro de migraña?');">
                                             @csrf
                                             @method('DELETE')
@@ -693,9 +693,6 @@
                                             </button>
                                         </form>
                                     </div>
-                                    @if ($esMultidia)
-                                        <p class="migraine-range-note">{{ ucfirst(\Carbon\Carbon::parse($fechaInicioEpisodio)->locale('es')->translatedFormat('l, j \d\e F \d\e Y')) }} - {{ ucfirst(\Carbon\Carbon::parse($fechaFinEpisodio)->locale('es')->translatedFormat('l, j \d\e F \d\e Y')) }}</p>
-                                    @endif
                                     <div class="migraine-meta">
                                         <span class="migraine-tag">{{ \App\Support\MigranaVisual::icono($episodio->tipo_migrana) }} {{ \App\Support\MigranaVisual::etiquetaTipo($episodio->tipo_migrana) }}</span>
                                         <span class="migraine-tag migraine-tag-stars" title="Intensidad: {{ ucfirst($episodio->intensidad) }}">{{ \App\Support\MigranaVisual::estrellas($episodio->intensidad) }}</span>
