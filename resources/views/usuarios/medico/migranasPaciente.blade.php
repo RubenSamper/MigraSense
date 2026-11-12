@@ -317,6 +317,13 @@
             <p class="kicker">Área médica</p>
             <h2>{{ $paciente->nombre }} {{ $paciente->apellidos }}</h2>
             <p class="correo">{{ $paciente->correo }}</p>
+            <p class="correo">Teléfono:
+                @if ($paciente->telefono)
+                    <a href="tel:{{ $paciente->telefono }}" style="color: inherit;">{{ $paciente->telefono }}</a>
+                @else
+                    No indicado
+                @endif
+            </p>
         </div>
 
         @if ($migranas->isNotEmpty())

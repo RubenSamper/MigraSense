@@ -26,6 +26,7 @@ class Usuario extends Authenticatable
         'nombre',
         'apellidos',
         'correo',
+        'telefono',
         'rol_id',
         'medico_id',
         'password',

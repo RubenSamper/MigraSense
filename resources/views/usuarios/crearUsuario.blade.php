@@ -325,6 +325,16 @@
                 @enderror
             </div>
             <div class="campo">
+                <label for="telefono">Teléfono</label>
+                <div class="campo-control"><input type="tel" id="telefono" name="telefono"
+                        value="{{ old('telefono') }}" placeholder="612 345 678" maxlength="16" autocomplete="tel"
+                        inputmode="tel" required aria-describedby="telefonoMensaje" /></div>
+                <p id="telefonoMensaje" class="campo-mensaje" aria-live="polite">Tu médico podrá verlo para contactar contigo.</p>
+                @error('telefono')
+                    <span class="campo-mensaje error server-error">{{ $message }}</span>
+                @enderror
+            </div>
+            <div class="campo">
                 <label for="password">Contraseña</label>
                 <div class="campo-control"><input type="password" onInput="validarPasswordUsuario()" id="password"
                         name="password" placeholder="Mínimo 8 caracteres" minlength="8" autocomplete="new-password"

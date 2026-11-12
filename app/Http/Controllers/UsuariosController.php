@@ -138,6 +138,8 @@ class UsuariosController extends Controller
     {
         $this->requiereAdmin();
 
+        $request->merge(['telefono' => self::normalizarTelefono($request->input('telefono'))]);
+
         $request->validate([
             'nombre' => [
                 'required',
@@ -157,6 +159,10 @@ class UsuariosController extends Controller
             'password' => [
                 'required',
                 'min:8'
+            ],
+            'telefono' => [
+                'required',
+                'regex:/^[6-9]\d{8}$/'
             ]
         ], self::mensajesValidacionUsuario());
 
@@ -166,6 +172,7 @@ class UsuariosController extends Controller
             'apellidos' => $request->apellidos,
             'correo' => $request->correo,
             'password' => Hash::make($request->password),
+            'telefono' => $request->telefono,
             'rol_id' => 3
         ]);
 
@@ -231,6 +238,8 @@ class UsuariosController extends Controller
 
     public function almacenarUsuario(Request $request)
     {
+        $request->merge(['telefono' => self::normalizarTelefono($request->input('telefono'))]);
+
         $request->validate([
             'nombre' => [
                 'required',
@@ -251,6 +260,10 @@ class UsuariosController extends Controller
                 'required',
                 'min:8'
             ],
+            'telefono' => [
+                'required',
+                'regex:/^[6-9]\d{8}$/'
+            ],
             'medico_id' => [
                 'required',
                 'exists:usuarios,id,rol_id,3'
@@ -267,6 +280,7 @@ class UsuariosController extends Controller
             'correo' => $request->correo,
             'password' => Hash::make($request->password),
             'rol_id' => 2,
+            'telefono' => $request->telefono,
             'medico_id' => $request->medico_id,
         ]);
 
@@ -668,6 +682,15 @@ class UsuariosController extends Controller
         }
     }
 
+    // Quita espacios, guiones, puntos y el prefijo +34 / 0034 para guardar
+    // solo los 9 dígitos del teléfono.
+    private static function normalizarTelefono($telefono): string
+    {
+        $telefono = preg_replace('/[\s\-.]/', '', (string) $telefono);
+
+        return preg_replace('/^(\+34|0034)/', '', $telefono);
+    }
+
     private static function mensajesValidacionUsuario(): array
     {
         return [
@@ -682,6 +705,8 @@ class UsuariosController extends Controller
             'correo.unique' => 'Este correo electrónico ya está registrado.',
             'password.required' => 'La contraseña es obligatoria.',
             'password.min' => 'La contraseña debe tener al menos 8 caracteres.',
+            'telefono.required' => 'El teléfono es obligatorio.',
+            'telefono.regex' => 'Introduce un teléfono válido de 9 dígitos (puedes incluir +34).',
         ];
     }
 }

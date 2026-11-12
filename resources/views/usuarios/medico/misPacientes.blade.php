@@ -148,6 +148,7 @@
                                 @endif
                             </div>
                             <div class="tarjeta-paciente-correo">{{ $paciente->correo }}</div>
+                            <div class="tarjeta-paciente-correo">Tel.: {{ $paciente->telefono ?: 'No indicado' }}</div>
                             <div class="tarjeta-paciente-ultimo">
                                 @if ($paciente->migranas_max_hora_inicio)
                                     Último episodio: {{ \Carbon\Carbon::parse($paciente->migranas_max_hora_inicio)->locale('es')->translatedFormat('j \d\e F \d\e Y, H:i') }}
