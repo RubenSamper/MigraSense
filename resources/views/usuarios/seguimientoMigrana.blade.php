@@ -662,19 +662,6 @@
             @if ($diasMigrana->isNotEmpty())
                 <div class="migraine-days">
                     @foreach ($diasMigrana as $fecha => $episodios)
-                        <article class="migraine-card">
-                            @php
-                                $cabeceraFecha = \Carbon\Carbon::parse($fecha)->format('d/m/Y');
-                                if ($episodios->count() === 1) {
-                                    $unico = $episodios->first();
-                                    $inicioUnico = \Carbon\Carbon::parse($unico->hora_inicio)->format('d/m/Y');
-                                    $finUnico = $unico->hora_termina ? \Carbon\Carbon::parse($unico->hora_termina)->format('d/m/Y') : $inicioUnico;
-                                    $cabeceraFecha = $inicioUnico === $finUnico ? $inicioUnico : $inicioUnico . ' - ' . $finUnico;
-                                }
-                            @endphp
-                            <h3 class="migraine-card-date">{{ $cabeceraFecha }}</h3>
-                            <p class="migraine-card-count">{{ $episodios->count() }} {{ $episodios->count() === 1 ? 'episodio registrado' : 'episodios registrados' }}</p>
-
                             @foreach ($episodios as $episodio)
                                 @php
                                     $fechaInicioEpisodio = \Carbon\Carbon::parse($episodio->hora_inicio)->toDateString();
@@ -683,7 +670,12 @@
                                         : $fechaInicioEpisodio;
                                     $esMultidia = $fechaFinEpisodio !== $fechaInicioEpisodio;
                                     $diagnosticoSinLeer = in_array($episodio->id, $diagnosticosSinLeerIds, true);
+                                    $inicioFmt = \Carbon\Carbon::parse($fechaInicioEpisodio)->format('d/m/Y');
+                                    $finFmt = \Carbon\Carbon::parse($fechaFinEpisodio)->format('d/m/Y');
+                                    $cabeceraFecha = $inicioFmt === $finFmt ? $inicioFmt : $inicioFmt . ' - ' . $finFmt;
                                 @endphp
+                                <article class="migraine-card">
+                                <h3 class="migraine-card-date">{{ $cabeceraFecha }}</h3>
                                 <div class="migraine-episode @if ($diagnosticoSinLeer) migraine-episode-sin-leer @endif" data-diagnostico-sin-leer="{{ $diagnosticoSinLeer ? '1' : '0' }}">
                                     <div class="migraine-episode-header">
                                         <strong>{{ \Carbon\Carbon::parse($episodio->hora_inicio)->format('H:i') }} - {{ $episodio->hora_termina ? \Carbon\Carbon::parse($episodio->hora_termina)->format('H:i') : 'Sin hora de fin' }}</strong>
@@ -724,8 +716,8 @@
                                         </details>
                                     @endif
                                 </div>
+                                </article>
                             @endforeach
-                        </article>
                     @endforeach
                 </div>
                 <p id="historial-sin-leer-vacio" class="empty-followup" hidden>No tienes diagnósticos nuevos por leer en {{ $etiquetaMesSeleccionado }}.</p>
