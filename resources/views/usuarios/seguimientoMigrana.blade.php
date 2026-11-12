@@ -663,7 +663,16 @@
                 <div class="migraine-days">
                     @foreach ($diasMigrana as $fecha => $episodios)
                         <article class="migraine-card">
-                            <h3 class="migraine-card-date">{{ \Carbon\Carbon::parse($fecha)->locale('es')->translatedFormat('l, j \d\e F \d\e Y') }}</h3>
+                            @php
+                                $cabeceraFecha = \Carbon\Carbon::parse($fecha)->format('d/m/Y');
+                                if ($episodios->count() === 1) {
+                                    $unico = $episodios->first();
+                                    $inicioUnico = \Carbon\Carbon::parse($unico->hora_inicio)->format('d/m/Y');
+                                    $finUnico = $unico->hora_termina ? \Carbon\Carbon::parse($unico->hora_termina)->format('d/m/Y') : $inicioUnico;
+                                    $cabeceraFecha = $inicioUnico === $finUnico ? $inicioUnico : $inicioUnico . ' - ' . $finUnico;
+                                }
+                            @endphp
+                            <h3 class="migraine-card-date">{{ $cabeceraFecha }}</h3>
                             <p class="migraine-card-count">{{ $episodios->count() }} {{ $episodios->count() === 1 ? 'episodio registrado' : 'episodios registrados' }}</p>
 
                             @foreach ($episodios as $episodio)
@@ -677,7 +686,7 @@
                                 @endphp
                                 <div class="migraine-episode @if ($diagnosticoSinLeer) migraine-episode-sin-leer @endif" data-diagnostico-sin-leer="{{ $diagnosticoSinLeer ? '1' : '0' }}">
                                     <div class="migraine-episode-header">
-                                        <strong><span style="display:block;font-size:0.8em;margin-bottom:2px;">{{ \Carbon\Carbon::parse($fechaInicioEpisodio)->format('d/m/Y') }}@if ($fechaFinEpisodio !== $fechaInicioEpisodio) - {{ \Carbon\Carbon::parse($fechaFinEpisodio)->format('d/m/Y') }}@endif</span>{{ \Carbon\Carbon::parse($episodio->hora_inicio)->format('H:i') }} - {{ $episodio->hora_termina ? \Carbon\Carbon::parse($episodio->hora_termina)->format('H:i') : 'Sin hora de fin' }}</strong>
+                                        <strong>{{ \Carbon\Carbon::parse($episodio->hora_inicio)->format('H:i') }} - {{ $episodio->hora_termina ? \Carbon\Carbon::parse($episodio->hora_termina)->format('H:i') : 'Sin hora de fin' }}</strong>
                                         <form class="migraine-delete-form" method="POST" action="{{ route('usuarios.eliminarMigrana', $episodio->id) }}" onsubmit="return confirm('¿Quieres eliminar este registro de migraña?');">
                                             @csrf
                                             @method('DELETE')
@@ -699,7 +708,7 @@
                                     </div>
                                     @if (filled($episodio->notas))
                                         <details class="migraine-more-info">
-                                            <summary>Hay más información. Haz clic para verla.</summary>
+                                            <summary>Información extra</summary>
                                             <p class="migraine-notes">{{ $episodio->notas }}</p>
                                         </details>
                                     @endif
