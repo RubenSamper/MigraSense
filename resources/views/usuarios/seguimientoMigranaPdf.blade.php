@@ -91,6 +91,9 @@
             font-size: 8.5px;
             text-align: right;
         }
+        .col-medico {
+            width: 16%;
+        }
     </style>
 </head>
 <body>
@@ -110,7 +113,8 @@
                     <th class="col-tipo">Tipo</th>
                     <th class="col-dolor">Nivel de dolor</th>
                     <th class="col-duracion">Duración total</th>
-                    <th class="col-diagnostico">Diagnóstico del médico</th>
+                    <th class="col-medico">Médico</th>
+                    <th class="col-diagnostico">Diagnóstico</th>
                 </tr>
             </thead>
             <tbody>
@@ -139,13 +143,11 @@
                         <td class="col-tipo">{{ \App\Support\MigranaVisual::etiquetaTipo($episodio->tipo_migrana) }}</td>
                         <td class="col-dolor">{{ ucfirst($episodio->intensidad) }}</td>
                         <td class="col-duracion">{{ $duracion }}</td>
+                        <td class="col-medico">{{ $nombreMedico ?? '—' }}</td>
                         <td class="col-diagnostico">
                             @if ($tieneDiagnostico)
                                 <span class="diagnostico-si">Sí</span>
                                 <div class="diagnostico-texto">{{ $episodio->diagnostico }}</div>
-                                @if ($nombreMedico)
-                                    <div class="diagnostico-texto"><b>{{ $nombreMedico }}</b></div>
-                                @endif
                             @else
                                 <span class="diagnostico-no">No</span>
                             @endif
