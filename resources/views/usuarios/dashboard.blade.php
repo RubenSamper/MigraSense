@@ -341,7 +341,23 @@
             }
         }
 
+        .migraine-modal-section {
+            margin-bottom: 20px;
+            padding: 22px;
+            border: 1px solid #dce7eb;
+            border-radius: 12px;
+            background: #fff;
+        }
+
+        .migraine-modal .intensidad-stars-row {
+            justify-content: center;
+        }
+
         @media (max-width: 500px) {
+            .migraine-modal-section {
+                padding: 16px;
+            }
+
             .migraine-modal-row {
                 flex-direction: column;
                 flex-wrap: nowrap;
@@ -682,18 +698,17 @@
 
                 <form id="formMigranaModal" method="POST" action="{{ route('usuarios.guardarMigrana') }}" novalidate>
                     @csrf
-                    <div class="migraine-modal-row">
-                        <div>
-                            <x-select-tipo-migrana />
-                            <p class="field-error" id="modal_error_tipo_migrana"></p>
-                        </div>
-                        <div>
-                            <x-select-intensidad />
-                            <p class="field-error" id="modal_error_intensidad"></p>
-                        </div>
+                    <div class="migraine-modal-section">
+                        <x-select-tipo-migrana />
+                        <p class="field-error" id="modal_error_tipo_migrana"></p>
                     </div>
 
-                    <div class="migraine-modal-row">
+                    <div class="migraine-modal-section">
+                        <x-select-intensidad />
+                        <p class="field-error" id="modal_error_intensidad"></p>
+                    </div>
+
+                    <div class="migraine-modal-row migraine-modal-section">
                         <div class="date-field">
                             <label for="modal_hora_inicio">Hora de inicio</label>
                             <input type="datetime-local" id="modal_hora_inicio" name="hora_inicio"
