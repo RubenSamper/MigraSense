@@ -218,6 +218,30 @@
             });
         };
 
+        function validarTelefonoUsuario() {
+            $.ajax({
+                url: "{{ route('usuarios.validarTelefonoUsuario') }}",
+                type: 'POST',
+                data: {
+                    telefono: $('#telefono').val(),
+                    _token: '{{ csrf_token() }}',
+                },
+                success: function (response) {
+                    if (response.errors != null) {
+                        mostrarEstado('telefono', false, response.errors[0]);
+                    }
+                    else {
+                        mostrarEstado('telefono', true, 'Teléfono válido');
+                    }
+                },
+
+                error: function (response) {
+                    console.error("Error", response);
+                    mostrarEstado('telefono', false, 'No se pudo validar el teléfono.');
+                }
+            });
+        };
+
         function validarPasswordUsuario() {
             $.ajax({
                 url: "{{ route('usuarios.validarPasswordUsuario') }}",
@@ -285,8 +309,8 @@
                 <label for="telefono">Teléfono</label>
                 <div class="campo-control"><input type="tel" id="telefono" name="telefono"
                         value="{{ old('telefono') }}" placeholder="612 345 678" maxlength="16" autocomplete="tel"
-                        inputmode="tel" required aria-describedby="telefonoMensaje" /></div>
-                <p id="telefonoMensaje" class="campo-mensaje" aria-live="polite">Teléfono de contacto del médico.</p>
+                        inputmode="tel" required onInput="validarTelefonoUsuario()" aria-describedby="telefonoMensaje" aria-invalid="false" /><span id="telefonoIcon" class="campo-icon" hidden aria-hidden="true"></span></div>
+                <p id="telefonoMensaje" class="campo-mensaje" aria-live="polite">Número de 9 dígitos, con o sin +34.</p>
                 @error('telefono')
                     <span class="campo-mensaje error server-error">{{ $message }}</span>
                 @enderror

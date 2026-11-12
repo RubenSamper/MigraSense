@@ -680,6 +680,21 @@ class UsuariosController extends Controller
         }
     }
 
+    public function validarTelefonoUsuario(Request $request)
+    {
+        $request->merge(['telefono' => self::normalizarTelefono($request->input('telefono'))]);
+
+        $validator = Validator::make($request->all(), [
+            'telefono' => ['required', 'regex:/^[6-9]\d{8}$/'],
+        ], self::mensajesValidacionUsuario());
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()->all()]);
+        } else {
+            return response()->json(['success' => true]);
+        }
+    }
+
     // Quita espacios, guiones, puntos y el prefijo +34 / 0034 para guardar
     // solo los 9 dígitos del teléfono.
     private static function normalizarTelefono($telefono): string

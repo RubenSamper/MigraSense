@@ -45,6 +45,7 @@ Route::post('/usuarios/almacenarUsuario', [UsuariosController::class, 'almacenar
 Route::post('/usuarios/validarNombreUsuario', [UsuariosController::class, 'validarNombreUsuario'])->name('usuarios.validarNombreUsuario');
 Route::post('/usuarios/validarApellidosUsuario', [UsuariosController::class, 'validarApellidosUsuario'])->name('usuarios.validarApellidosUsuario');
 Route::post('/usuarios/validarCorreoUsuario', [UsuariosController::class, 'validarCorreoUsuario'])->name('usuarios.validarCorreoUsuario');
+Route::post('/usuarios/validarTelefonoUsuario', [UsuariosController::class, 'validarTelefonoUsuario'])->name('usuarios.validarTelefonoUsuario');
 Route::post('/usuarios/validarPasswordUsuario', [UsuariosController::class, 'validarPasswordUsuario'])->name('usuarios.validarPasswordUsuario');
 
 Route::get('/usuarios/dashboard', [UsuariosController::class, 'dashboard']) // esta ruta es para mostrar el mapa y la ubicación del usuario
