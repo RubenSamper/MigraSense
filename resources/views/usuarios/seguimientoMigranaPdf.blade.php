@@ -105,12 +105,11 @@
         <table class="episodios">
             <thead>
                 <tr>
-                    <th class="col-fecha">Fecha</th>
+                    <th class="col-fecha">Fecha de inicio</th>
+                    <th class="col-fecha">Fecha de fin</th>
                     <th class="col-tipo">Tipo</th>
                     <th class="col-dolor">Nivel de dolor</th>
-                    <th class="col-inicio">Inicio</th>
-                    <th class="col-fin">Fin</th>
-                    <th class="col-duracion">Duración</th>
+                    <th class="col-duracion">Duración total</th>
                     <th class="col-diagnostico">Diagnóstico del médico</th>
                 </tr>
             </thead>
@@ -119,20 +118,34 @@
                     @php
                         $inicio = \Carbon\Carbon::parse($episodio->hora_inicio);
                         $fin = $episodio->hora_termina ? \Carbon\Carbon::parse($episodio->hora_termina) : null;
-                        $duracion = $fin ? trim($inicio->diff($fin)->format('%hh %im')) : 'Sin hora de fin';
+                        if ($fin) {
+                            $totalMinutos = (int) abs($inicio->diffInMinutes($fin));
+                            $dias = intdiv($totalMinutos, 1440);
+                            $horas = intdiv($totalMinutos % 1440, 60);
+                            $minutos = $totalMinutos % 60;
+                            $duracion = trim(($dias ? $dias . 'd ' : '') . ($dias || $horas ? $horas . 'h ' : '') . $minutos . 'm');
+                        } else {
+                            $duracion = 'Sin hora de fin';
+                        }
                         $tieneDiagnostico = filled($episodio->diagnostico);
+                        $medicoAsignado = $usuario->medico;
+                        $nombreMedico = $medicoAsignado
+                            ? trim($medicoAsignado->nombre . ' ' . $medicoAsignado->apellidos)
+                            : null;
                     @endphp
                     <tr>
                         <td class="col-fecha">{{ $inicio->format('d/m/Y') }}</td>
+                        <td class="col-fecha">{{ $fin ? $fin->format('d/m/Y') : '—' }}</td>
                         <td class="col-tipo">{{ \App\Support\MigranaVisual::etiquetaTipo($episodio->tipo_migrana) }}</td>
                         <td class="col-dolor">{{ ucfirst($episodio->intensidad) }}</td>
-                        <td class="col-inicio">{{ $inicio->format('H:i') }}</td>
-                        <td class="col-fin">{{ $fin ? $fin->format('H:i') : '—' }}</td>
                         <td class="col-duracion">{{ $duracion }}</td>
                         <td class="col-diagnostico">
                             @if ($tieneDiagnostico)
                                 <span class="diagnostico-si">Sí</span>
                                 <div class="diagnostico-texto">{{ $episodio->diagnostico }}</div>
+                                @if ($nombreMedico)
+                                    <div class="diagnostico-texto"><b>{{ $nombreMedico }}</b></div>
+                                @endif
                             @else
                                 <span class="diagnostico-no">No</span>
                             @endif
